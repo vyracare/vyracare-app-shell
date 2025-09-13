@@ -39,7 +39,7 @@ jobs:
       # Sincronizar build com S3
       - name: Deploy to S3
         run: |
-          aws s3 sync ./dist/shell s3://vyracare-app-shell --delete
+          aws s3 sync ./dist/vyracare-app-shell s3://vyracare-app-shell --delete
 
       # Invalidar cache do CloudFront
       - name: Invalidate CloudFront

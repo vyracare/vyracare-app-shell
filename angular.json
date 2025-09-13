@@ -29,10 +29,6 @@
 						"styles": [
 							"src/styles.scss"
 						],
-						"outputMode": "server",
-						"ssr": {
-							"entry": "src/server.ts"
-						},
 						"main": "src/main.ts",
 						"outputPath": "dist/vyracare-app-shell",
 						"index": "src\\index.html",
