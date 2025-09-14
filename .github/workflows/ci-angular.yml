@@ -1,4 +1,4 @@
-name: Angular CI (Reusable)
+name: Angular CI
 
 on:
   workflow_call:
