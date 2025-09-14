@@ -12,7 +12,6 @@ jobs:
     uses: ./.github/workflows/ci-angular.yml
     with:
       branch-name: ${{ github.ref_name }}
-      build-path: dist/vyracare-app-shell
 
   open-pr-develop:
     runs-on: ubuntu-latest
@@ -22,14 +21,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Create Pull Request to develop
-        uses: peter-evans/create-pull-request@v6
+      - name: Open Pull Request to develop
+        uses: repo-sync/pull-request@v2
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "chore: merge branch ${{ github.ref_name }} into develop"
-          branch: develop
-          base: develop
-          title: "Merge ${{ github.ref_name }} into develop"
-          body: |
+          github_token: ${{ secrets.PAT_TOKEN }}
+          source_branch: ${{ github.ref_name }}
+          destination_branch: develop
+          pr_title: "Merge ${{ github.ref_name }} into develop"
+          pr_body: |
             PR automática criada pelo pipeline.
             Branch de origem: `${{ github.ref_name }}`

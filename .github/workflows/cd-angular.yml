@@ -1,82 +1,132 @@
-name: Angular CD Blue-Green Reusable Workflow
+name: Angular CD (Blue-Green com Timestamp)
 
 on:
   workflow_call:
     inputs:
-      s3-bucket:
-        required: true
-        type: string
-      cloudfront-id:
-        required: true
-        type: string
-      aws-region:
+      branch-name:
+        description: 'Branch que disparou o deploy'
         required: true
         type: string
       build-path:
+        description: 'Caminho do build a ser deployado'
         required: true
         type: string
+    secrets:
+      AWS_ACCESS_KEY_ID:
+        required: true
+      AWS_SECRET_ACCESS_KEY:
+        required: true
+      S3_BUCKET_NAME:
+        required: true
+      CLOUDFRONT_ID:
+        required: true
+      AWS_REGION:
+        required: false
+      PAT_TOKEN:
+        required: true   # Token para abrir PR
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    outputs:
-      previous-path: ${{ steps.detect.outputs.active-path }}
-      deploy-path: ${{ steps.deploy-folder.outputs.deploy-path }}
-
+    env:
+      AWS_REGION: ${{ secrets.AWS_REGION || 'us-east-1' }}
+      S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
+      CLOUDFRONT_ID: ${{ secrets.CLOUDFRONT_ID }}
     steps:
-      - uses: aws-actions/configure-aws-credentials@v2
+      # 1️⃣ Checkout do código
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # 2️⃣ Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      # 3️⃣ Instalar dependências
+      - name: Install dependencies
+        run: npm ci
+
+      # 4️⃣ Build Angular na develop
+      - name: Build Angular
+        run: npm run build -- --configuration production
+
+      # 5️⃣ Configurar AWS CLI
+      - name: Configure AWS CLI
+        uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ inputs.aws-region }}
+          aws-region: ${{ env.AWS_REGION }}
 
-      - name: Detect active/inactive versions
+      # 6️⃣ Detectar versão ativa/inativa
+      - name: Detect active/inactive version
         id: detect
         run: |
-          ACTIVE=$(aws cloudfront get-distribution --id ${{ inputs.cloudfront-id }} | jq -r '.Distribution.Origins.Items[0].OriginPath')
-          if [[ "$ACTIVE" == "/blue"* ]]; then
+          ACTIVE=$(aws cloudfront get-distribution --id $CLOUDFRONT_ID | jq -r '.Distribution.Origins.Items[0].OriginPath')
+          if [[ "$ACTIVE" == "/blue" ]]; then
             INACTIVE="green"
           else
             INACTIVE="blue"
           fi
           echo "ACTIVE=$ACTIVE" >> $GITHUB_ENV
           echo "INACTIVE=$INACTIVE" >> $GITHUB_ENV
-          echo "active-path=$ACTIVE" >> $GITHUB_OUTPUT
+          echo "previous-path=$ACTIVE" >> $GITHUB_OUTPUT
 
-      - name: Deploy to S3 inactive folder
-        id: deploy-folder
+      # 7️⃣ Deploy para pasta inativa com timestamp
+      - name: Deploy to INACTIVE folder with timestamp
         run: |
-          DEPLOY_PATH="/$INACTIVE"
-          aws s3 sync ${{ inputs.build-path }} s3://${{ inputs.s3-bucket }}$DEPLOY_PATH --delete
-          echo "deploy-path=$DEPLOY_PATH" >> $GITHUB_OUTPUT
+          TIMESTAMP=$(date +%Y%m%d%H%M%S)
+          INACTIVE_PATH="$INACTIVE/$TIMESTAMP"
+          echo "Deploying build to folder $INACTIVE_PATH"
+          aws s3 sync dist/vyracare-app-shell s3://$S3_BUCKET_NAME/$INACTIVE_PATH --delete
+          echo "DEPLOY_PATH=/$INACTIVE_PATH" >> $GITHUB_ENV
 
-      - name: Swap CloudFront to new inactive version
+      # 8️⃣ Cleanup builds antigas (mantendo 3 últimas)
+      - name: Cleanup old builds
         run: |
-          DISTRIBUTION_CONFIG=$(aws cloudfront get-distribution-config --id ${{ inputs.cloudfront-id }})
+          for folder in blue green; do
+            builds=$(aws s3 ls s3://$S3_BUCKET_NAME/$folder/ | awk '{print $2}' | sort)
+            total=$(echo "$builds" | wc -l)
+            if [ $total -gt 3 ]; then
+              to_delete=$(echo "$builds" | head -n $(($total - 3)))
+              for d in $to_delete; do
+                aws s3 rm s3://$S3_BUCKET_NAME/$folder/$d --recursive
+              done
+            fi
+          done
+
+      # 9️⃣ Swap CloudFront para nova versão
+      - name: Swap CloudFront
+        run: |
+          DISTRIBUTION_CONFIG=$(aws cloudfront get-distribution-config --id $CLOUDFRONT_ID)
           ETAG=$(echo $DISTRIBUTION_CONFIG | jq -r '.ETag')
           CONFIG=$(echo $DISTRIBUTION_CONFIG | jq '.DistributionConfig')
-          UPDATED_CONFIG=$(echo $CONFIG | jq --arg path "${{ steps.deploy-folder.outputs.deploy-path }}" '.Origins.Items[0].OriginPath=$path')
-          aws cloudfront update-distribution --id ${{ inputs.cloudfront-id }} --if-match $ETAG --distribution-config "$UPDATED_CONFIG"
+          UPDATED_CONFIG=$(echo $CONFIG | jq --arg path "$DEPLOY_PATH" '.Origins.Items[0].OriginPath=$path')
+          aws cloudfront update-distribution --id $CLOUDFRONT_ID --if-match $ETAG --distribution-config "$UPDATED_CONFIG"
 
+      # 🔟 Invalidação de cache CloudFront
       - name: Invalidate CloudFront cache
-        run: aws cloudfront create-invalidation --distribution-id ${{ inputs.cloudfront-id }} --paths "/*"
+        run: aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_ID --paths "/*"
 
-  rollback:
-    runs-on: ubuntu-latest
-    if: failure()
-    needs: deploy
-    steps:
-      - uses: aws-actions/configure-aws-credentials@v2
+      - name: Open Pull Request to main
+        uses: repo-sync/pull-request@v2
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ inputs.aws-region }}
+          github_token: ${{ secrets.PAT_TOKEN }}
+          source_branch: ${{ inputs.branch-name }}
+          destination_branch: main
+          pr_title: "Merge ${{ inputs.branch-name }} into main"
+          pr_body: |
+            PR automática criada pelo pipeline.
+            Branch de origem: `${{ inputs.branch-name }}`
 
-      - name: Rollback CloudFront
+      # 1️⃣1️⃣ Rollback em caso de falha
+      - name: Rollback if failure
+        if: failure()
         run: |
-          PREVIOUS_PATH="${{ needs.deploy.outputs.previous-path }}"
-          DISTRIBUTION_CONFIG=$(aws cloudfront get-distribution-config --id ${{ inputs.cloudfront-id }})
+          echo "Rollback triggered. Reverting to previous version: ${{ steps.detect.outputs.previous-path }}"
+          DISTRIBUTION_CONFIG=$(aws cloudfront get-distribution-config --id $CLOUDFRONT_ID)
           ETAG=$(echo $DISTRIBUTION_CONFIG | jq -r '.ETag')
           CONFIG=$(echo $DISTRIBUTION_CONFIG | jq '.DistributionConfig')
-          UPDATED_CONFIG=$(echo $CONFIG | jq --arg path "$PREVIOUS_PATH" '.Origins.Items[0].OriginPath=$path')
-          aws cloudfront update-distribution --id ${{ inputs.cloudfront-id }} --if-match $ETAG --distribution-config "$UPDATED_CONFIG"
+          UPDATED_CONFIG=$(echo $CONFIG | jq --arg path "${{ steps.detect.outputs.previous-path }}" '.Origins.Items[0].OriginPath=$path')
+          aws cloudfront update-distribution --id $CLOUDFRONT_ID --if-match $ETAG --distribution-config "$UPDATED_CONFIG"
