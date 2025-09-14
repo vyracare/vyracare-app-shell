@@ -6,6 +6,7 @@ on:
       rollback-path:
         description: 'Versão do rollback (ex: /blue/20250914120000)'
         required: false
+        type: string
     secrets:
       AWS_ACCESS_KEY_ID:
         required: true
@@ -39,7 +40,6 @@ jobs:
           if [ -n "${{ inputs.rollback-path }}" ]; then
             echo "ROLLBACK_PATH=${{ inputs.rollback-path }}" >> $GITHUB_ENV
           else
-            # Se não fornecido, pega a última versão de build
             LAST_BUILD=$(aws s3 ls s3://$S3_BUCKET_NAME/blue/ | awk '{print $2}' | sort | tail -n 1)
             ROLLBACK_PATH="/blue/$LAST_BUILD"
             echo "ROLLBACK_PATH=$ROLLBACK_PATH" >> $GITHUB_ENV
