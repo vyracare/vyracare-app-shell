@@ -1,0 +1,21 @@
+name: Manual Rollback Angular
+
+on:
+  workflow_dispatch:
+    inputs:
+      rollback-path:
+        description: ''
+        required: false
+        default: ''
+
+jobs:
+  rollback:
+    uses: ./.github/workflows/roolback-generic.yml
+    with:
+      s3-bucket: ${{ secrets.S3_BUCKET_NAME }}
+      cloudfront-id: ${{ secrets.CLOUDFRONT_ID }}
+      aws-region: us-east-1
+      rollback-path: ${{ github.event.inputs.rollback-path }}
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

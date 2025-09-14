@@ -1,0 +1,78 @@
+name: Rollback Blue-Green Angular (Reusable)
+
+on:
+  workflow_call:
+    inputs:
+      s3-bucket:
+        required: true
+        type: string
+      cloudfront-id:
+        required: true
+        type: string
+      aws-region:
+        required: true
+        type: string
+      rollback-path:
+        required: false
+        type: string  # Se vazio, volta para a versão anterior detectada automaticamente
+
+    secrets:
+      AWS_ACCESS_KEY_ID:
+        required: true
+      AWS_SECRET_ACCESS_KEY:
+        required: true
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    env:
+      S3_BUCKET_NAME: ${{ inputs.s3-bucket }}
+      CLOUDFRONT_ID: ${{ inputs.cloudfront-id }}
+      AWS_REGION: ${{ inputs.aws-region }}
+      ROLLBACK_PATH: ${{ inputs.rollback-path }}
+    steps:
+      # 1️⃣ Checkout do repositório
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # 2️⃣ Configurar AWS CLI
+      - name: Configure AWS CLI
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # 3️⃣ Detectar versão ativa/inativa se rollback-path não foi fornecido
+      - name: Detect previous version if rollback-path not set
+        id: detect
+        run: |
+          if [ -z "$ROLLBACK_PATH" ]; then
+            ACTIVE=$(aws cloudfront get-distribution --id $CLOUDFRONT_ID | jq -r '.Distribution.Origins.Items[0].OriginPath')
+            if [[ "$ACTIVE" == "/blue" ]]; then
+              INACTIVE="green"
+            else
+              INACTIVE="blue"
+            fi
+            # Buscar a última build do folder inativo
+            LAST_BUILD=$(aws s3 ls s3://$S3_BUCKET_NAME/$INACTIVE/ | awk '{print $2}' | sort | tail -n1)
+            ROLLBACK_PATH="/$INACTIVE/$LAST_BUILD"
+            echo "Detected rollback path: $ROLLBACK_PATH"
+          else
+            echo "Using provided rollback path: $ROLLBACK_PATH"
+          fi
+          echo "ROLLBACK_PATH=$ROLLBACK_PATH" >> $GITHUB_ENV
+
+      # 4️⃣ Executar rollback no CloudFront
+      - name: Rollback CloudFront
+        run: |
+          echo "Rolling back CloudFront to path: $ROLLBACK_PATH"
+          DISTRIBUTION_CONFIG=$(aws cloudfront get-distribution-config --id $CLOUDFRONT_ID)
+          ETAG=$(echo $DISTRIBUTION_CONFIG | jq -r '.ETag')
+          CONFIG=$(echo $DISTRIBUTION_CONFIG | jq '.DistributionConfig')
+          UPDATED_CONFIG=$(echo $CONFIG | jq --arg path "$ROLLBACK_PATH" '.Origins.Items[0].OriginPath=$path')
+          aws cloudfront update-distribution --id $CLOUDFRONT_ID --if-match $ETAG --distribution-config "$UPDATED_CONFIG"
+
+      # 5️⃣ Invalidação de cache CloudFront
+      - name: Invalidate CloudFront cache
+        run: aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_ID --paths "/*"
