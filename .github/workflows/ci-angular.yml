@@ -6,57 +6,45 @@ on:
       - 'feat/*'
       - 'fix/*'
       - 'feature/*'
+      - 'main'
 
 jobs:
-  build:
+  build-and-test:
     runs-on: ubuntu-latest
     outputs:
-      build-folder: ${{ steps.set-output.outputs.build-folder }}
+      artifact-name: ${{ steps.set-output.outputs.artifact-name }}
+
     steps:
+      # 1️⃣ Checkout
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      # 2️⃣ Setup Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 20
 
+      # 3️⃣ Install dependencies
       - name: Install dependencies
         run: npm ci
 
-      - name: Build Angular App
+      # 4️⃣ Build Angular
+      - name: Build Angular
         run: npm run build -- --configuration production
 
+      # 5️⃣ Run Unit Tests
+      - name: Run unit tests
+        run: npm run test -- --watch=false --browsers=ChromeHeadless
+
+      # 6️⃣ Upload Artifact
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
           name: angular-dist
           path: dist/vyracare-app-shell
 
-      - name: Set build folder output
+      # 7️⃣ Output name
+      - name: Set artifact output
         id: set-output
-        run: echo "build-folder=dist/vyracare-app-shell" >> $GITHUB_OUTPUT
-
-  test:
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 20
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Download build artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: angular-dist
-          path: dist/vyracare-app-shell
-
-      - name: Run unit tests
-        run: npm run test -- --watch=false --browsers=ChromeHeadless
+        run: echo "artifact-name=angular-dist" >> $GITHUB_OUTPUT

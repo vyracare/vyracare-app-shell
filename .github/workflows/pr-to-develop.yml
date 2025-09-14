@@ -1,4 +1,4 @@
-name: Open PR to Develop
+name: Create PR to Develop
 
 on:
   workflow_run:
@@ -7,9 +7,13 @@ on:
       - completed
 
 jobs:
-  open-pr:
+  open-pr-develop:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' && startsWith(github.event.workflow_run.head_branch, 'feat/') || startsWith(github.event.workflow_run.head_branch, 'fix/') || startsWith(github.event.workflow_run.head_branch, 'feature/') }}
+    if: |
+      github.event.workflow_run.conclusion == 'success' &&
+      (startsWith(github.event.workflow_run.head_branch, 'feat/') ||
+       startsWith(github.event.workflow_run.head_branch, 'fix/') ||
+       startsWith(github.event.workflow_run.head_branch, 'feature/'))
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -17,7 +21,7 @@ jobs:
       - name: Open Pull Request to develop
         uses: repo-sync/pull-request@v2
         with:
-          github_token: ${{ secrets.PAT_TOKEN }}   # PAT com permissão de repo
+          github_token: ${{ secrets.PAT_TOKEN }}
           source_branch: ${{ github.event.workflow_run.head_branch }}
           destination_branch: develop
           pr_title: "Merge ${{ github.event.workflow_run.head_branch }} into develop"
