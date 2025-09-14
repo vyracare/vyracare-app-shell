@@ -1,0 +1,82 @@
+name: Angular CD Blue-Green Reusable Workflow
+
+on:
+  workflow_call:
+    inputs:
+      s3-bucket:
+        required: true
+        type: string
+      cloudfront-id:
+        required: true
+        type: string
+      aws-region:
+        required: true
+        type: string
+      build-path:
+        required: true
+        type: string
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    outputs:
+      previous-path: ${{ steps.detect.outputs.active-path }}
+      deploy-path: ${{ steps.deploy-folder.outputs.deploy-path }}
+
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ inputs.aws-region }}
+
+      - name: Detect active/inactive versions
+        id: detect
+        run: |
+          ACTIVE=$(aws cloudfront get-distribution --id ${{ inputs.cloudfront-id }} | jq -r '.Distribution.Origins.Items[0].OriginPath')
+          if [[ "$ACTIVE" == "/blue"* ]]; then
+            INACTIVE="green"
+          else
+            INACTIVE="blue"
+          fi
+          echo "ACTIVE=$ACTIVE" >> $GITHUB_ENV
+          echo "INACTIVE=$INACTIVE" >> $GITHUB_ENV
+          echo "active-path=$ACTIVE" >> $GITHUB_OUTPUT
+
+      - name: Deploy to S3 inactive folder
+        id: deploy-folder
+        run: |
+          DEPLOY_PATH="/$INACTIVE"
+          aws s3 sync ${{ inputs.build-path }} s3://${{ inputs.s3-bucket }}$DEPLOY_PATH --delete
+          echo "deploy-path=$DEPLOY_PATH" >> $GITHUB_OUTPUT
+
+      - name: Swap CloudFront to new inactive version
+        run: |
+          DISTRIBUTION_CONFIG=$(aws cloudfront get-distribution-config --id ${{ inputs.cloudfront-id }})
+          ETAG=$(echo $DISTRIBUTION_CONFIG | jq -r '.ETag')
+          CONFIG=$(echo $DISTRIBUTION_CONFIG | jq '.DistributionConfig')
+          UPDATED_CONFIG=$(echo $CONFIG | jq --arg path "${{ steps.deploy-folder.outputs.deploy-path }}" '.Origins.Items[0].OriginPath=$path')
+          aws cloudfront update-distribution --id ${{ inputs.cloudfront-id }} --if-match $ETAG --distribution-config "$UPDATED_CONFIG"
+
+      - name: Invalidate CloudFront cache
+        run: aws cloudfront create-invalidation --distribution-id ${{ inputs.cloudfront-id }} --paths "/*"
+
+  rollback:
+    runs-on: ubuntu-latest
+    if: failure()
+    needs: deploy
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ inputs.aws-region }}
+
+      - name: Rollback CloudFront
+        run: |
+          PREVIOUS_PATH="${{ needs.deploy.outputs.previous-path }}"
+          DISTRIBUTION_CONFIG=$(aws cloudfront get-distribution-config --id ${{ inputs.cloudfront-id }})
+          ETAG=$(echo $DISTRIBUTION_CONFIG | jq -r '.ETag')
+          CONFIG=$(echo $DISTRIBUTION_CONFIG | jq '.DistributionConfig')
+          UPDATED_CONFIG=$(echo $CONFIG | jq --arg path "$PREVIOUS_PATH" '.Origins.Items[0].OriginPath=$path')
+          aws cloudfront update-distribution --id ${{ inputs.cloudfront-id }} --if-match $ETAG --distribution-config "$UPDATED_CONFIG"
