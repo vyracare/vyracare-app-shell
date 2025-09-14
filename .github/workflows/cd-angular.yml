@@ -27,20 +27,20 @@ on:
 
 jobs:
   cd-bluegreen:
-    uses: ./.github/workflows/cd-workflows/deploy-s3.yml
+    uses: ./.github/workflows/deploy-s3.yml
     with:
       build-path: ${{ inputs.build-path }}
       inactive-folder: blue   # aqui podemos usar um passo detect anterior para alternar blue/green
 
   swap-cloudfront:
     needs: cd-bluegreen
-    uses: ./.github/workflows/cd-workflows/swap-cloudfront.yml
+    uses: ./.github/workflows/swap-cloudfront.yml
     with:
       deploy-path: ${{ needs.cd-bluegreen.outputs.DEPLOY_PATH }}
 
   cleanup:
     needs: swap-cloudfront
-    uses: ./.github/workflows/cd-workflows/cleanup-old-builds.yml
+    uses: ./.github/workflows/cleanup-old-builds.yml
 
   open-pr-main:
     needs: cleanup
