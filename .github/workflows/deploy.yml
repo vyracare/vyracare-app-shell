@@ -3,10 +3,10 @@ name: DEPLOY
 on:
   push:
     branches:
-      - develop
+      - develop  # Dispara quando houver merge na develop
 
 jobs:
-  cd-angular:
+  call-cd:
     uses: ./.github/workflows/cd-angular.yml
     with:
       branch-name: ${{ github.ref_name }}

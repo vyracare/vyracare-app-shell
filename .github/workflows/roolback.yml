@@ -9,7 +9,7 @@ on:
 
 jobs:
   call-rollback:
-    uses: ./.github/workflows/rollback-bluegreen.yml
+    uses: ./.github/workflows/rollback-generic.yml
     with:
       rollback-path: ${{ github.event.inputs.rollback-path }}
     secrets:
