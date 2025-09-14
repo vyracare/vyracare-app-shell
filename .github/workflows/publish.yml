@@ -7,7 +7,7 @@ on:
 
 jobs:
   publish:
-    uses: ./.github/workflows/cd-angular.yml
+    uses: vyracare/vyracare-infra-pipes-angular/.github/workflows/cd-angular.yml@main
     with:
       branch-name: ${{ github.ref_name }}
       build-path: dist/vyracare-app-shell

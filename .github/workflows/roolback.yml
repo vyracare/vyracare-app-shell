@@ -9,7 +9,7 @@ on:
 
 jobs:
   rollback:
-    uses: ./.github/workflows/rollback-generic.yml
+    uses: vyracare/vyracare-infra-pipes-angular/.github/workflows/rollback-generic.yml@main
     with:
       rollback-path: ${{ github.event.inputs.rollback-path }}
     secrets:
