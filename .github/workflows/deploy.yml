@@ -1,45 +1,93 @@
-name: Deploy Angular Shell (Blue-Green Unit Tests)
+name: Deploy Angular Shell (Blue-Green Modular with Cleanup)
 
 on:
   push:
     branches: [ "main" ]
 
 jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
 
-    env:
-      S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
-      CLOUDFRONT_ID: ${{ secrets.CLOUDFRONT_ID }}
-      AWS_REGION: us-east-1
+  # ================================
+  # 1️⃣ Build
+  # ================================
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      build-folder: ${{ steps.set-output.outputs.build-folder }}
 
     steps:
-      # 1️⃣ Checkout do código
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2️⃣ Setup Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 20
 
-      # 3️⃣ Instalar dependências
       - name: Install dependencies
         run: npm ci
 
-      # 4️⃣ Build Angular Shell
       - name: Build Angular Shell
         run: npm run build -- --configuration production
 
-      # 5️⃣ Executar testes unitários
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: angular-dist
+          path: dist/vyracare-app-shell
+
+      - name: Set build folder output
+        id: set-output
+        run: echo "build-folder=dist/vyracare-app-shell" >> $GITHUB_OUTPUT
+
+  # ================================
+  # 2️⃣ Test
+  # ================================
+  test:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: angular-dist
+          path: dist/vyracare-app-shell
+
       - name: Run unit tests
         run: |
           echo "Running Angular unit tests"
           npm run test -- --watch=false --browsers=ChromeHeadless
-        # O workflow falha automaticamente se os testes unitários falharem
 
-      # 6️⃣ Configurar AWS CLI
+  # ================================
+  # 3️⃣ Deploy
+  # ================================
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [build, test]
+    env:
+      S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
+      CLOUDFRONT_ID: ${{ secrets.CLOUDFRONT_ID }}
+      AWS_REGION: us-east-1
+    outputs:
+      previous-path: ${{ steps.detect.outputs.previous-path }}
+
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: angular-dist
+          path: dist/vyracare-app-shell
+
       - name: Configure AWS CLI
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -47,45 +95,82 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      # 7️⃣ Detectar versão ativa e inativa
+      # Detect active/inactive
       - name: Detect active version
         id: detect
         run: |
           ACTIVE=$(aws cloudfront get-distribution --id $CLOUDFRONT_ID | jq -r '.Distribution.Origins.Items[0].OriginPath')
           if [[ "$ACTIVE" == "/blue" ]]; then
-            echo "ACTIVE=blue" >> $GITHUB_ENV
-            echo "INACTIVE=green" >> $GITHUB_ENV
+            INACTIVE="green"
           else
-            echo "ACTIVE=green" >> $GITHUB_ENV
-            echo "INACTIVE=blue" >> $GITHUB_ENV
+            INACTIVE="blue"
           fi
-          echo "Active version: $ACTIVE"
-          echo "Inactive version: $INACTIVE"
+          echo "ACTIVE=$ACTIVE" >> $GITHUB_ENV
+          echo "INACTIVE=$INACTIVE" >> $GITHUB_ENV
+          echo "previous-path=$ACTIVE" >> $GITHUB_OUTPUT
+          echo "Active=$ACTIVE | Inactive=$INACTIVE"
 
-      # 8️⃣ Deploy build para pasta inativa
-      - name: Deploy to INACTIVE folder
+      # Deploy para pasta inativa
+      - name: Deploy to inactive folder
         run: |
           echo "Deploying build to folder $INACTIVE"
-          aws s3 sync ./dist/vyracare-app-shell s3://$S3_BUCKET_NAME/$INACTIVE --delete
+          TIMESTAMP=$(date +%Y%m%d%H%M%S)
+          aws s3 sync dist/vyracare-app-shell s3://$S3_BUCKET_NAME/$INACTIVE/$TIMESTAMP --delete
+          echo "DEPLOY_PATH=/$INACTIVE/$TIMESTAMP" >> $GITHUB_ENV
 
-      # 9️⃣ Swap CloudFront para nova versão somente se testes passarem
-      - name: Swap CloudFront to INACTIVE
-        if: success()
+      # Cleanup old builds (mantém só os 3 mais recentes em cada pasta)
+      - name: Cleanup old builds
+        run: |
+          for folder in blue green; do
+            echo "Cleaning up old builds in $folder..."
+            builds=$(aws s3 ls s3://$S3_BUCKET_NAME/$folder/ | awk '{print $2}' | sort)
+            total=$(echo "$builds" | wc -l)
+            if [ $total -gt 3 ]; then
+              to_delete=$(echo "$builds" | head -n $(($total - 3)))
+              for d in $to_delete; do
+                echo "Deleting s3://$S3_BUCKET_NAME/$folder/$d"
+                aws s3 rm s3://$S3_BUCKET_NAME/$folder/$d --recursive
+              done
+            fi
+          done
+
+      # Swap CloudFront
+      - name: Swap CloudFront to inactive
         run: |
           DISTRIBUTION_CONFIG=$(aws cloudfront get-distribution-config --id $CLOUDFRONT_ID)
           ETAG=$(echo $DISTRIBUTION_CONFIG | jq -r '.ETag')
           CONFIG=$(echo $DISTRIBUTION_CONFIG | jq '.DistributionConfig')
-          UPDATED_CONFIG=$(echo $CONFIG | jq --arg path "/$INACTIVE" '.Origins.Items[0].OriginPath=$path')
+          UPDATED_CONFIG=$(echo $CONFIG | jq --arg path "$DEPLOY_PATH" '.Origins.Items[0].OriginPath=$path')
           aws cloudfront update-distribution --id $CLOUDFRONT_ID --if-match $ETAG --distribution-config "$UPDATED_CONFIG"
 
-      # 🔟 Invalidação de cache
+      # Invalidate cache
       - name: Invalidate CloudFront cache
-        if: success()
-        run: |
-          aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_ID --paths "/*"
+        run: aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_ID --paths "/*"
 
-      # 1️⃣1️⃣ Rollback ou notificação em caso de falha
-      - name: Rollback notification
-        if: failure()
+  # ================================
+  # 4️⃣ Rollback
+  # ================================
+  rollback:
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: failure()
+    env:
+      S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
+      CLOUDFRONT_ID: ${{ secrets.CLOUDFRONT_ID }}
+      AWS_REGION: us-east-1
+    steps:
+      - name: Configure AWS CLI
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Rollback CloudFront
         run: |
-          echo "Unit tests failed! CloudFront still points to $ACTIVE. Rollback not required, version active não foi alterada."
+          echo "Rollback triggered. Reverting to previous version: ${{ needs.deploy.outputs.previous-path }}"
+          DISTRIBUTION_CONFIG=$(aws cloudfront get-distribution-config --id $CLOUDFRONT_ID)
+          ETAG=$(echo $DISTRIBUTION_CONFIG | jq -r '.ETag')
+          CONFIG=$(echo $DISTRIBUTION_CONFIG | jq '.DistributionConfig')
+          UPDATED_CONFIG=$(echo $CONFIG | jq --arg path "${{ needs.deploy.outputs.previous-path }}" '.Origins.Items[0].OriginPath=$path')
+          aws cloudfront update-distribution --id $CLOUDFRONT_ID --if-match $ETAG --distribution-config "$UPDATED_CONFIG"
