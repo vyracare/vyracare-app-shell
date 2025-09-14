@@ -9,7 +9,7 @@ on:
 
 jobs:
   ci-angular:
-    uses: ./.github/workflows/ci-angular.yml
+    uses: vyracare/vyracare-infra-pipes-angular/.github/workflows/ci-angular.yml@main
     with:
       branch-name: ${{ github.ref_name }}
 
