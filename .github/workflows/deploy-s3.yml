@@ -7,19 +7,15 @@ on:
         description: 'Caminho do build a ser deployado'
         required: true
         type: string
-      inactive-folder:
-        description: 'Pasta inativa (blue ou green)'
+      branch-name:
+        description: 'Branch que disparou o deploy'
         required: true
         type: string
     secrets:
-      AWS_ACCESS_KEY_ID:
-        required: true
-      AWS_SECRET_ACCESS_KEY:
-        required: true
-      S3_BUCKET_NAME:
-        required: true
-      AWS_REGION:
-        required: false
+      AWS_ACCESS_KEY_ID: { required: true }
+      AWS_SECRET_ACCESS_KEY: { required: true }
+      S3_BUCKET_NAME: { required: true }
+      AWS_REGION: { required: false }
 
 jobs:
   deploy:
@@ -30,21 +26,19 @@ jobs:
       AWS_REGION: ${{ secrets.AWS_REGION || 'us-east-1' }}
       S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
+      - uses: actions/checkout@v3
       - name: Configure AWS CLI
         uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
-
       - name: Deploy build to S3
         id: set-deploy-path
         run: |
           TIMESTAMP=$(date +%Y%m%d%H%M%S)
-          DEPLOY_PATH="/${{ inputs.inactive-folder }}/$TIMESTAMP"
+          INACTIVE_FOLDER="blue"
+          DEPLOY_PATH="/$INACTIVE_FOLDER/$TIMESTAMP"
           echo "Deploying build to $DEPLOY_PATH"
           aws s3 sync ${{ inputs.build-path }} s3://$S3_BUCKET_NAME$DEPLOY_PATH --delete
           echo "DEPLOY_PATH=$DEPLOY_PATH" >> $GITHUB_OUTPUT
