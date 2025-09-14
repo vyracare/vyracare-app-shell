@@ -1,17 +1,37 @@
 name: Angular CD (Blue-Green com Timestamp)
 
 on:
-  push:
-    branches:
-      - develop   # Dispara somente quando há push/merge na develop
+  workflow_call:
+    inputs:
+      branch-name:
+        description: 'Branch que disparou o deploy'
+        required: true
+        type: string
+      build-path:
+        description: 'Caminho do build a ser deployado'
+        required: true
+        type: string
+    secrets:
+      AWS_ACCESS_KEY_ID:
+        required: true
+      AWS_SECRET_ACCESS_KEY:
+        required: true
+      S3_BUCKET_NAME:
+        required: true
+      CLOUDFRONT_ID:
+        required: true
+      AWS_REGION:
+        required: false
+      PAT_TOKEN:
+        required: true   # Token para abrir PR
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     env:
+      AWS_REGION: ${{ secrets.AWS_REGION || 'us-east-1' }}
       S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
       CLOUDFRONT_ID: ${{ secrets.CLOUDFRONT_ID }}
-      AWS_REGION: us-east-1
     steps:
       # 1️⃣ Checkout do código
       - name: Checkout repository
