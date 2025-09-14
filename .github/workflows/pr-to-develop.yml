@@ -1,4 +1,4 @@
-name: PR TO DEVELOP
+name: Angular CI Pipeline
 
 on:
   push:
@@ -8,14 +8,11 @@ on:
       - 'feature/*'
 
 jobs:
-  # 🔹 Roda build + testes chamando workflow de CI Angular
   call-ci-workflow:
     uses: ./.github/workflows/ci-angular.yml
     with:
       branch-name: ${{ github.ref_name }}
-      build-path: dist/vyracare-app-shell
 
-  # 🔹 Abre PR da branch atual para develop
   open-pr-develop:
     runs-on: ubuntu-latest
     needs: call-ci-workflow
@@ -27,9 +24,9 @@ jobs:
       - name: Open Pull Request to develop
         uses: repo-sync/pull-request@v2
         with:
-          github_token: ${{ secrets.PAT_TOKEN }}   # PAT com permissão de repo
-          source_branch: ${{ github.ref_name }}    # branch de origem
-          destination_branch: develop              # branch destino
+          github_token: ${{ secrets.PAT_TOKEN }}
+          source_branch: ${{ github.ref_name }}
+          destination_branch: develop
           pr_title: "Merge ${{ github.ref_name }} into develop"
           pr_body: |
             PR automática criada pelo pipeline.
