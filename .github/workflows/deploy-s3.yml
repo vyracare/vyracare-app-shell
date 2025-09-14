@@ -7,15 +7,19 @@ on:
         description: 'Caminho do build a ser deployado'
         required: true
         type: string
-      branch-name:
-        description: 'Branch que disparou o deploy'
+      inactive-folder:
+        description: 'Pasta inativa (blue ou green)'
         required: true
         type: string
     secrets:
-      AWS_ACCESS_KEY_ID: { required: true }
-      AWS_SECRET_ACCESS_KEY: { required: true }
-      S3_BUCKET_NAME: { required: true }
-      AWS_REGION: { required: false }
+      AWS_ACCESS_KEY_ID:
+        required: true
+      AWS_SECRET_ACCESS_KEY:
+        required: true
+      S3_BUCKET_NAME:
+        required: true
+      AWS_REGION:
+        required: false
 
 jobs:
   deploy:
@@ -40,7 +44,7 @@ jobs:
         id: set-deploy-path
         run: |
           TIMESTAMP=$(date +%Y%m%d%H%M%S)
-          DEPLOY_PATH="/blue/$TIMESTAMP"
+          DEPLOY_PATH="/${{ inputs.inactive-folder }}/$TIMESTAMP"
           echo "Deploying build to $DEPLOY_PATH"
           aws s3 sync ${{ inputs.build-path }} s3://$S3_BUCKET_NAME$DEPLOY_PATH --delete
           echo "DEPLOY_PATH=$DEPLOY_PATH" >> $GITHUB_OUTPUT

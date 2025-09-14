@@ -8,7 +8,8 @@ on:
         required: true
         type: string
     secrets:
-      PAT_TOKEN: { required: true }
+      PAT_TOKEN:
+        required: true
 
 jobs:
   open-pr:
@@ -24,6 +25,4 @@ jobs:
           source_branch: ${{ inputs.branch-name }}
           destination_branch: main
           pr_title: "Merge ${{ inputs.branch-name }} into main"
-          pr_body: |
-            PR automática criada pelo pipeline.
-            Branch de origem: `${{ inputs.branch-name }}`
+          pr_body: "PR automática criada pelo pipeline. Branch de origem: `${{ inputs.branch-name }}`"
