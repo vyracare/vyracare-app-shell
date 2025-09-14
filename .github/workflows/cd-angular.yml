@@ -1,9 +1,9 @@
-name: Angular CD (Blue-Green)
+name: Angular CD (Blue-Green com Timestamp)
 
 on:
   push:
     branches:
-      - develop   # Dispara apenas quando há push/merge na develop
+      - develop   # Dispara somente quando há push/merge na develop
 
 jobs:
   deploy:
@@ -52,16 +52,17 @@ jobs:
           echo "ACTIVE=$ACTIVE" >> $GITHUB_ENV
           echo "INACTIVE=$INACTIVE" >> $GITHUB_ENV
           echo "previous-path=$ACTIVE" >> $GITHUB_OUTPUT
-          echo "Active=$ACTIVE | Inactive=$INACTIVE"
 
-      # 7️⃣ Deploy para pasta inativa
-      - name: Deploy to INACTIVE folder
+      # 7️⃣ Deploy para pasta inativa com timestamp
+      - name: Deploy to INACTIVE folder with timestamp
         run: |
-          echo "Deploying build to folder $INACTIVE"
-          aws s3 sync dist/vyracare-app-shell s3://$S3_BUCKET_NAME/$INACTIVE --delete
-          echo "DEPLOY_PATH=/$INACTIVE" >> $GITHUB_ENV
+          TIMESTAMP=$(date +%Y%m%d%H%M%S)
+          INACTIVE_PATH="$INACTIVE/$TIMESTAMP"
+          echo "Deploying build to folder $INACTIVE_PATH"
+          aws s3 sync dist/vyracare-app-shell s3://$S3_BUCKET_NAME/$INACTIVE_PATH --delete
+          echo "DEPLOY_PATH=/$INACTIVE_PATH" >> $GITHUB_ENV
 
-      # 8️⃣ Cleanup builds antigas
+      # 8️⃣ Cleanup builds antigas (mantendo 3 últimas)
       - name: Cleanup old builds
         run: |
           for folder in blue green; do
@@ -75,7 +76,7 @@ jobs:
             fi
           done
 
-      # 9️⃣ Swap CloudFront para versão inativa
+      # 9️⃣ Swap CloudFront para nova versão
       - name: Swap CloudFront
         run: |
           DISTRIBUTION_CONFIG=$(aws cloudfront get-distribution-config --id $CLOUDFRONT_ID)
