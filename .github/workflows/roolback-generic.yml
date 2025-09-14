@@ -1,4 +1,4 @@
-name: Reusable Blue-Green Rollback
+name: Blue-Green Rollback Manual
 
 on:
   workflow_dispatch:
@@ -22,6 +22,7 @@ jobs:
   rollback:
     runs-on: ubuntu-latest
     steps:
+      # 1️⃣ Configurar AWS CLI
       - name: Configure AWS CLI
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -29,27 +30,31 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ github.event.inputs.aws-region }}
 
-      - name: Detect rollback path
-        id: detect
+      # 2️⃣ Determinar versão de rollback
+      - name: Determine rollback version
+        id: determine
         run: |
           if [ -z "${{ github.event.inputs.rollback-path }}" ]; then
+            echo "Nenhum rollback-path fornecido. Detectando última versão ativa..."
             ACTIVE=$(aws cloudfront get-distribution --id ${{ github.event.inputs.cloudfront-id }} | jq -r '.Distribution.Origins.Items[0].OriginPath')
-            echo "ROLLBACK_PATH=$ACTIVE" >> $GITHUB_ENV
+            echo "rollback_path=$ACTIVE" >> $GITHUB_ENV
           else
-            echo "ROLLBACK_PATH=${{ github.event.inputs.rollback-path }}" >> $GITHUB_ENV
+            echo "rollback_path=${{ github.event.inputs.rollback-path }}" >> $GITHUB_ENV
           fi
-          echo "Rollback target: $ROLLBACK_PATH"
+          echo "Rollback version: $rollback_path"
 
-      - name: Rollback CloudFront
+      # 3️⃣ Atualizar CloudFront para rollback
+      - name: Execute rollback
         run: |
+          echo "Executando rollback para $rollback_path"
           DISTRIBUTION_CONFIG=$(aws cloudfront get-distribution-config --id ${{ github.event.inputs.cloudfront-id }})
           ETAG=$(echo $DISTRIBUTION_CONFIG | jq -r '.ETag')
           CONFIG=$(echo $DISTRIBUTION_CONFIG | jq '.DistributionConfig')
-          UPDATED_CONFIG=$(echo $CONFIG | jq --arg path "$ROLLBACK_PATH" '.Origins.Items[0].OriginPath=$path')
+          UPDATED_CONFIG=$(echo $CONFIG | jq --arg path "$rollback_path" '.Origins.Items[0].OriginPath=$path')
           aws cloudfront update-distribution --id ${{ github.event.inputs.cloudfront-id }} --if-match $ETAG --distribution-config "$UPDATED_CONFIG"
-          echo "Rollback realizado para $ROLLBACK_PATH"
 
+      # 4️⃣ Invalidação de cache
       - name: Invalidate CloudFront cache
         run: |
+          echo "Invalidando cache do CloudFront"
           aws cloudfront create-invalidation --distribution-id ${{ github.event.inputs.cloudfront-id }} --paths "/*"
-          echo "Cache do CloudFront invalidado"
