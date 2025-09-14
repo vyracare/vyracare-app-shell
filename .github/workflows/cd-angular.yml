@@ -7,24 +7,42 @@ on:
         description: 'Branch que disparou o deploy'
         required: true
         type: string
-      build-path:
-        description: 'Caminho do build a ser deployado'
-        required: true
-        type: string
     secrets:
-      AWS_ACCESS_KEY_ID: { required: true }
-      AWS_SECRET_ACCESS_KEY: { required: true }
-      S3_BUCKET_NAME: { required: true }
-      CLOUDFRONT_ID: { required: true }
-      AWS_REGION: { required: false }
-      PAT_TOKEN: { required: true }
+      AWS_ACCESS_KEY_ID:
+        required: true
+      AWS_SECRET_ACCESS_KEY:
+        required: true
+      S3_BUCKET_NAME:
+        required: true
+      CLOUDFRONT_ID:
+        required: true
+      AWS_REGION:
+        required: false
+      PAT_TOKEN:
+        required: true
 
 jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      build-path: dist/vyracare-app-shell
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+      - name: Install dependencies
+        run: npm ci
+      - name: Build Angular
+        run: npm run build -- --configuration production
+
   deploy-s3:
+    needs: build
     uses: ./.github/workflows/deploy-s3.yml
     with:
-      build-path: ${{ inputs.build-path }}
-      inactive-folder: blue
+      build-path: ${{ needs.build.outputs.build-path }}
+      branch-name: ${{ inputs.branch-name }}
     secrets:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -58,3 +76,28 @@ jobs:
       branch-name: ${{ inputs.branch-name }}
     secrets:
       PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
+
+  rollback:
+    if: failure()
+    needs: deploy-s3
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFRONT_ID: ${{ secrets.CLOUDFRONT_ID }}
+      AWS_REGION: ${{ secrets.AWS_REGION || 'us-east-1' }}
+    steps:
+      - name: Configure AWS CLI
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: Rollback CloudFront to previous version
+        run: |
+          PREVIOUS_PATH=$(aws cloudfront get-distribution --id $CLOUDFRONT_ID | jq -r '.Distribution.Origins.Items[0].OriginPath')
+          echo "Rollback triggered. Reverting to previous version: $PREVIOUS_PATH"
+          DISTRIBUTION_CONFIG=$(aws cloudfront get-distribution-config --id $CLOUDFRONT_ID)
+          ETAG=$(echo $DISTRIBUTION_CONFIG | jq -r '.ETag')
+          CONFIG=$(echo $DISTRIBUTION_CONFIG | jq '.DistributionConfig')
+          UPDATED_CONFIG=$(echo $CONFIG | jq --arg path "$PREVIOUS_PATH" '.Origins.Items[0].OriginPath=$path')
+          aws cloudfront update-distribution --id $CLOUDFRONT_ID --if-match $ETAG --distribution-config "$UPDATED_CONFIG"
+          aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_ID --paths "/*"
