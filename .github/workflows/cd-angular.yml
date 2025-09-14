@@ -1,4 +1,4 @@
-name: Angular CD Blue-Green
+name: Angular CD Blue-Green Modular
 
 on:
   workflow_call:
@@ -26,82 +26,89 @@ on:
         required: true
 
 jobs:
-  build:
+  deploy-s3:
     runs-on: ubuntu-latest
     outputs:
-      build-path: dist/vyracare-app-shell
-    steps:
-      - uses: actions/checkout@v3
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 20
-      - name: Install dependencies
-        run: npm ci
-      - name: Build Angular
-        run: npm run build -- --configuration production
-
-  deploy-s3:
-    needs: build
-    uses: ./.github/workflows/deploy-s3.yml
-    with:
-      build-path: ${{ needs.build.outputs.build-path }}
-      branch-name: ${{ inputs.branch-name }}
-    secrets:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
-      AWS_REGION: ${{ secrets.AWS_REGION }}
-
-  swap-cloudfront:
-    needs: deploy-s3
-    uses: ./.github/workflows/swap-cloudfront.yml
-    with:
-      deploy-path: ${{ needs.deploy-s3.outputs.DEPLOY_PATH }}
-    secrets:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      CLOUDFRONT_ID: ${{ secrets.CLOUDFRONT_ID }}
-
-  cleanup:
-    needs: swap-cloudfront
-    uses: ./.github/workflows/cleanup-old-builds.yml
-    with:
-      deploy-path: ${{ needs.deploy-s3.outputs.DEPLOY_PATH }}
-    secrets:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
-
-  open-pr-main:
-    needs: cleanup
-    uses: ./.github/workflows/open-pr-main.yml
-    with:
-      branch-name: ${{ inputs.branch-name }}
-    secrets:
-      PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
-
-  rollback:
-    if: failure()
-    needs: deploy-s3
-    runs-on: ubuntu-latest
+      DEPLOY_PATH: ${{ steps.deploy.outputs.DEPLOY_PATH }}
     env:
-      CLOUDFRONT_ID: ${{ secrets.CLOUDFRONT_ID }}
       AWS_REGION: ${{ secrets.AWS_REGION || 'us-east-1' }}
+      S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
       - name: Configure AWS CLI
         uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
-      - name: Rollback CloudFront to previous version
+
+      - name: Detect active/inactive version
+        id: detect
         run: |
-          PREVIOUS_PATH=$(aws cloudfront get-distribution --id $CLOUDFRONT_ID | jq -r '.Distribution.Origins.Items[0].OriginPath')
-          echo "Rollback triggered. Reverting to previous version: $PREVIOUS_PATH"
-          DISTRIBUTION_CONFIG=$(aws cloudfront get-distribution-config --id $CLOUDFRONT_ID)
+          ACTIVE=$(aws cloudfront get-distribution --id ${{ secrets.CLOUDFRONT_ID }} | jq -r '.Distribution.Origins.Items[0].OriginPath')
+          if [[ "$ACTIVE" == "/blue" ]]; then
+            INACTIVE="green"
+          else
+            INACTIVE="blue"
+          fi
+          echo "INACTIVE=$INACTIVE" >> $GITHUB_ENV
+          echo "ACTIVE_PATH=$ACTIVE" >> $GITHUB_ENV
+          echo "PREVIOUS_PATH=$ACTIVE" >> $GITHUB_OUTPUT
+
+      - name: Deploy build to S3
+        id: deploy
+        run: |
+          TIMESTAMP=$(date +%Y%m%d%H%M%S)
+          DEPLOY_PATH="/${INACTIVE}/$TIMESTAMP"
+          echo "Deploying ${{ inputs.build-path }} to $DEPLOY_PATH"
+          aws s3 sync ${{ inputs.build-path }} s3://$S3_BUCKET_NAME$DEPLOY_PATH --delete
+          echo "DEPLOY_PATH=$DEPLOY_PATH" >> $GITHUB_OUTPUT
+
+      - name: Swap CloudFront to new version
+        run: |
+          DISTRIBUTION_CONFIG=$(aws cloudfront get-distribution-config --id ${{ secrets.CLOUDFRONT_ID }})
           ETAG=$(echo $DISTRIBUTION_CONFIG | jq -r '.ETag')
           CONFIG=$(echo $DISTRIBUTION_CONFIG | jq '.DistributionConfig')
-          UPDATED_CONFIG=$(echo $CONFIG | jq --arg path "$PREVIOUS_PATH" '.Origins.Items[0].OriginPath=$path')
-          aws cloudfront update-distribution --id $CLOUDFRONT_ID --if-match $ETAG --distribution-config "$UPDATED_CONFIG"
-          aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_ID --paths "/*"
+          UPDATED_CONFIG=$(echo $CONFIG | jq --arg path "${{ steps.deploy.outputs.DEPLOY_PATH }}" '.Origins.Items[0].OriginPath=$path')
+          aws cloudfront update-distribution --id ${{ secrets.CLOUDFRONT_ID }} --if-match $ETAG --distribution-config "$UPDATED_CONFIG"
+
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_ID }} --paths "/*"
+
+      - name: Cleanup old builds
+        run: |
+          for folder in blue green; do
+            builds=$(aws s3 ls s3://$S3_BUCKET_NAME/$folder/ | awk '{print $2}' | sort)
+            total=$(echo "$builds" | wc -l)
+            if [ $total -gt 3 ]; then
+              to_delete=$(echo "$builds" | head -n $(($total - 3)))
+              for d in $to_delete; do
+                aws s3 rm s3://$S3_BUCKET_NAME/$folder/$d --recursive
+              done
+            fi
+          done
+
+      - name: Open Pull Request to main
+        uses: repo-sync/pull-request@v2
+        with:
+          github_token: ${{ secrets.PAT_TOKEN }}
+          source_branch: ${{ inputs.branch-name }}
+          destination_branch: main
+          pr_title: "Merge ${{ inputs.branch-name }} into main"
+          pr_body: |
+            PR automática criada pelo pipeline.
+            Branch de origem: `${{ inputs.branch-name }}`
+
+      - name: Rollback if failure
+        if: failure()
+        run: |
+          echo "Rollback triggered. Reverting to previous version: ${{ steps.detect.outputs.PREVIOUS_PATH }}"
+          DISTRIBUTION_CONFIG=$(aws cloudfront get-distribution-config --id ${{ secrets.CLOUDFRONT_ID }})
+          ETAG=$(echo $DISTRIBUTION_CONFIG | jq -r '.ETag')
+          CONFIG=$(echo $DISTRIBUTION_CONFIG | jq '.DistributionConfig')
+          UPDATED_CONFIG=$(echo $CONFIG | jq --arg path "${{ steps.detect.outputs.PREVIOUS_PATH }}" '.Origins.Items[0].OriginPath=$path')
+          aws cloudfront update-distribution --id ${{ secrets.CLOUDFRONT_ID }} --if-match $ETAG --distribution-config "$UPDATED_CONFIG"
+          aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_ID }} --paths "/*"
