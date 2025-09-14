@@ -1,4 +1,4 @@
-name: Angular CD Blue-Green Reusable Workflow
+name: CD Blue-Green
 
 on:
   workflow_call:
@@ -15,47 +15,57 @@ on:
       build-path:
         required: true
         type: string
+    secrets:
+      AWS_ACCESS_KEY_ID:
+        required: true
+      AWS_SECRET_ACCESS_KEY:
+        required: true
+      S3_BUCKET_NAME:
+        required: true
+      CLOUDFRONT_ID:
+        required: true
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    outputs:
-      previous-path: ${{ steps.detect.outputs.active-path }}
-      deploy-path: ${{ steps.deploy-folder.outputs.deploy-path }}
-
     steps:
-      - uses: aws-actions/configure-aws-credentials@v2
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Configure AWS CLI
+        uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ inputs.aws-region }}
 
-      - name: Detect active/inactive versions
+      - name: Detect active version
         id: detect
         run: |
           ACTIVE=$(aws cloudfront get-distribution --id ${{ inputs.cloudfront-id }} | jq -r '.Distribution.Origins.Items[0].OriginPath')
-          if [[ "$ACTIVE" == "/blue"* ]]; then
+          if [[ "$ACTIVE" == "/blue" ]]; then
             INACTIVE="green"
           else
             INACTIVE="blue"
           fi
           echo "ACTIVE=$ACTIVE" >> $GITHUB_ENV
           echo "INACTIVE=$INACTIVE" >> $GITHUB_ENV
-          echo "active-path=$ACTIVE" >> $GITHUB_OUTPUT
+          echo "previous-path=$ACTIVE" >> $GITHUB_OUTPUT
+          echo "Active=$ACTIVE | Inactive=$INACTIVE"
 
-      - name: Deploy to S3 inactive folder
-        id: deploy-folder
+      - name: Deploy to inactive folder
         run: |
-          DEPLOY_PATH="/$INACTIVE"
-          aws s3 sync ${{ inputs.build-path }} s3://${{ inputs.s3-bucket }}$DEPLOY_PATH --delete
-          echo "deploy-path=$DEPLOY_PATH" >> $GITHUB_OUTPUT
+          echo "Deploying build to folder $INACTIVE"
+          TIMESTAMP=$(date +%Y%m%d%H%M%S)
+          aws s3 sync ${{ inputs.build-path }} s3://${{ inputs.s3-bucket }}/$INACTIVE/$TIMESTAMP --delete
+          echo "DEPLOY_PATH=/$INACTIVE/$TIMESTAMP" >> $GITHUB_ENV
 
-      - name: Swap CloudFront to new inactive version
+      - name: Swap CloudFront to inactive
         run: |
           DISTRIBUTION_CONFIG=$(aws cloudfront get-distribution-config --id ${{ inputs.cloudfront-id }})
           ETAG=$(echo $DISTRIBUTION_CONFIG | jq -r '.ETag')
           CONFIG=$(echo $DISTRIBUTION_CONFIG | jq '.DistributionConfig')
-          UPDATED_CONFIG=$(echo $CONFIG | jq --arg path "${{ steps.deploy-folder.outputs.deploy-path }}" '.Origins.Items[0].OriginPath=$path')
+          UPDATED_CONFIG=$(echo $CONFIG | jq --arg path "$DEPLOY_PATH" '.Origins.Items[0].OriginPath=$path')
           aws cloudfront update-distribution --id ${{ inputs.cloudfront-id }} --if-match $ETAG --distribution-config "$UPDATED_CONFIG"
 
       - name: Invalidate CloudFront cache
@@ -63,20 +73,32 @@ jobs:
 
   rollback:
     runs-on: ubuntu-latest
-    if: failure()
-    needs: deploy
+    if: ${{ github.event.inputs.rollback == 'true' }}   # Executa apenas quando informado
     steps:
-      - uses: aws-actions/configure-aws-credentials@v2
+      - name: Configure AWS CLI
+        uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ inputs.aws-region }}
 
-      - name: Rollback CloudFront
+      - name: Rollback CloudFront to previous version
         run: |
-          PREVIOUS_PATH="${{ needs.deploy.outputs.previous-path }}"
+          echo "Fazendo rollback para versão anterior..."
           DISTRIBUTION_CONFIG=$(aws cloudfront get-distribution-config --id ${{ inputs.cloudfront-id }})
           ETAG=$(echo $DISTRIBUTION_CONFIG | jq -r '.ETag')
           CONFIG=$(echo $DISTRIBUTION_CONFIG | jq '.DistributionConfig')
+
+          # Pega o origin anterior salvo no evento de deploy
+          PREVIOUS_PATH=$(aws cloudfront get-distribution --id ${{ inputs.cloudfront-id }} | jq -r '.Distribution.Origins.Items[0].OriginPath')
+
+          if [[ -z "$PREVIOUS_PATH" ]]; then
+            echo "Nenhuma versão anterior encontrada para rollback."
+            exit 1
+          fi
+
           UPDATED_CONFIG=$(echo $CONFIG | jq --arg path "$PREVIOUS_PATH" '.Origins.Items[0].OriginPath=$path')
           aws cloudfront update-distribution --id ${{ inputs.cloudfront-id }} --if-match $ETAG --distribution-config "$UPDATED_CONFIG"
+
+      - name: Invalidate CloudFront cache after rollback
+        run: aws cloudfront create-invalidation --distribution-id ${{ inputs.cloudfront-id }} --paths "/*"
