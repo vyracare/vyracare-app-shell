@@ -1,24 +1,16 @@
-name: Angular CD Blue-Green
+name: CD Blue-Green from develop
 
 on:
-  workflow_run:
-    workflows: ["Angular CI Pipeline"]
-    types:
-      - completed
+  push:
+    branches:
+      - develop
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    if: |
-      github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.head_branch == 'main'
-    env:
-      S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
-      CLOUDFRONT_ID: ${{ secrets.CLOUDFRONT_ID }}
-      AWS_REGION: us-east-1
 
     steps:
-      - name: Download CI artifact
+      - name: Download build artifact from last successful CI
         uses: actions/download-artifact@v4
         with:
           name: angular-dist
@@ -29,11 +21,12 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region: us-east-1
 
       - name: Detect active version
         id: detect
         run: |
+          CLOUDFRONT_ID=${{ secrets.CLOUDFRONT_ID }}
           ACTIVE=$(aws cloudfront get-distribution --id $CLOUDFRONT_ID | jq -r '.Distribution.Origins.Items[0].OriginPath')
           if [[ "$ACTIVE" == "/blue" ]]; then
             INACTIVE="green"
@@ -45,10 +38,13 @@ jobs:
           echo "previous-path=$ACTIVE" >> $GITHUB_OUTPUT
 
       - name: Deploy to inactive folder
-        run: aws s3 sync dist/vyracare-app-shell s3://$S3_BUCKET_NAME/$INACTIVE --delete
-
-      - name: Swap CloudFront
         run: |
+          echo "Deploying build to folder $INACTIVE"
+          aws s3 sync dist/vyracare-app-shell s3://${{ secrets.S3_BUCKET_NAME }}/$INACTIVE --delete
+
+      - name: Swap CloudFront to inactive
+        run: |
+          CLOUDFRONT_ID=${{ secrets.CLOUDFRONT_ID }}
           DISTRIBUTION_CONFIG=$(aws cloudfront get-distribution-config --id $CLOUDFRONT_ID)
           ETAG=$(echo $DISTRIBUTION_CONFIG | jq -r '.ETag')
           CONFIG=$(echo $DISTRIBUTION_CONFIG | jq '.DistributionConfig')
@@ -56,11 +52,13 @@ jobs:
           aws cloudfront update-distribution --id $CLOUDFRONT_ID --if-match $ETAG --distribution-config "$UPDATED_CONFIG"
 
       - name: Invalidate CloudFront cache
-        run: aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_ID --paths "/*"
+        run: aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_ID }} --paths "/*"
 
-      - name: Rollback if failure detected
+      - name: Rollback if failure
         if: failure()
         run: |
+          echo "Rollback triggered. Reverting to previous version: ${{ steps.detect.outputs.previous-path }}"
+          CLOUDFRONT_ID=${{ secrets.CLOUDFRONT_ID }}
           DISTRIBUTION_CONFIG=$(aws cloudfront get-distribution-config --id $CLOUDFRONT_ID)
           ETAG=$(echo $DISTRIBUTION_CONFIG | jq -r '.ETag')
           CONFIG=$(echo $DISTRIBUTION_CONFIG | jq '.DistributionConfig')
