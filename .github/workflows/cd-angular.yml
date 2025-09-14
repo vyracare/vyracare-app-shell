@@ -7,6 +7,10 @@ on:
         description: 'Branch que disparou o deploy'
         required: true
         type: string
+      build-path:
+        description: 'Caminho do build a ser deployado'
+        required: true
+        type: string
     secrets:
       AWS_ACCESS_KEY_ID:
         required: true
