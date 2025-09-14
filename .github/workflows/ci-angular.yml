@@ -12,6 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       build-folder: ${{ steps.set-output.outputs.build-folder }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -60,22 +61,3 @@ jobs:
 
       - name: Run unit tests
         run: npm run test -- --watch=false --browsers=ChromeHeadless
-
-  open-pr-develop:
-    runs-on: ubuntu-latest
-    needs: test
-    if: startsWith(github.ref, 'refs/heads/feat/') || startsWith(github.ref, 'refs/heads/fix/') || startsWith(github.ref, 'refs/heads/feature/')
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Open Pull Request to develop
-        uses: repo-sync/pull-request@v2
-        with:
-          github_token: ${{ secrets.PAT_TOKEN }}
-          source_branch: ${{ inputs.branch-name }}
-          destination_branch: develop
-          pr_title: "PR automatic ${{ inputs.branch-name }} into develop"
-          pr_body: |
-            PR automática criada pelo pipeline.
-            Branch de origem: `${{ inputs.branch-name }}`
