@@ -25,9 +25,9 @@ jobs:
       - name: Create Pull Request to develop
         uses: peter-evans/create-pull-request@v6
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ github.ref_name }}      # branch de origem
-          base: develop                       # branch destino
+          token: ${{ secrets.PAT_TOKEN }}         # Use PAT instead of GITHUB_TOKEN
+          branch: ${{ github.ref_name }}          # branch de origem
+          base: develop                            # branch destino
           commit-message: "chore: merge branch ${{ github.ref_name }} into develop"
           title: "Merge ${{ github.ref_name }} into develop"
           body: |
