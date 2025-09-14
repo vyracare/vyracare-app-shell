@@ -4,24 +4,18 @@ on:
   workflow_call:
     inputs:
       deploy-path:
-        description: 'Caminho do deploy para trocar no CloudFront'
+        description: 'Caminho do deploy ativo'
         required: true
         type: string
     secrets:
-      AWS_ACCESS_KEY_ID:
-        required: true
-      AWS_SECRET_ACCESS_KEY:
-        required: true
-      CLOUDFRONT_ID:
-        required: true
-      AWS_REGION:
-        required: false
+      AWS_ACCESS_KEY_ID: { required: true }
+      AWS_SECRET_ACCESS_KEY: { required: true }
+      CLOUDFRONT_ID: { required: true }
 
 jobs:
   swap:
     runs-on: ubuntu-latest
     env:
-      AWS_REGION: ${{ secrets.AWS_REGION || 'us-east-1' }}
       CLOUDFRONT_ID: ${{ secrets.CLOUDFRONT_ID }}
     steps:
       - name: Configure AWS CLI
@@ -29,7 +23,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region: us-east-1
 
       - name: Swap CloudFront
         run: |
