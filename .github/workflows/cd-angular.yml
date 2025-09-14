@@ -109,6 +109,17 @@ jobs:
       - name: Invalidate CloudFront cache
         run: aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_ID --paths "/*"
 
+      - name: Open Pull Request to main
+        uses: repo-sync/pull-request@v2
+        with:
+          github_token: ${{ secrets.PAT_TOKEN }}
+          source_branch: ${{ inputs.branch-name }}
+          destination_branch: main
+          pr_title: "Merge ${{ inputs.branch-name }} into main"
+          pr_body: |
+            PR automática criada pelo pipeline.
+            Branch de origem: `${{ inputs.branch-name }}`
+
       # 1️⃣1️⃣ Rollback em caso de falha
       - name: Rollback if failure
         if: failure()
