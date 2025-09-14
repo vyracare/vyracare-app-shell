@@ -61,3 +61,22 @@ jobs:
 
       - name: Run unit tests
         run: npm run test -- --watch=false --browsers=ChromeHeadless
+
+  open-pr-develop:
+    needs: test
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/heads/feat/') || startsWith(github.ref, 'refs/heads/fix/') || startsWith(github.ref, 'refs/heads/feature/')
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Open Pull Request to develop
+        uses: repo-sync/pull-request@v2
+        with:
+          github_token: ${{ secrets.PAT_TOKEN }}
+          source_branch: ${{ github.ref_name }}
+          destination_branch: develop
+          pr_title: "PR automatic ${{ github.ref_name }} into develop"
+          pr_body: |
+            PR automática criada pelo pipeline.
+            Branch de origem: `${{ github.ref_name }}`
