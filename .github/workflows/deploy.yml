@@ -107,7 +107,7 @@ jobs:
         id: set-folder
         run: |
           INACTIVE_FOLDER="$INACTIVE"
-          aws s3 sync ./dist/vyracare-app-shell s3://vyracare-app-shell/$INACTIVE_FOLDER --delete
+          aws s3 sync ./dist/vyracare-app-shell s3://$S3_BUCKET_NAME/$INACTIVE_FOLDER --delete
           echo "inactive-folder=$INACTIVE_FOLDER" >> $GITHUB_OUTPUT
 
   # ================================
