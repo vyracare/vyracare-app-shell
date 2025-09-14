@@ -1,4 +1,4 @@
-name: Angular CD (Blue-Green com Timestamp)
+name: Angular CD
 
 on:
   workflow_call:
@@ -33,25 +33,25 @@ jobs:
       S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
       CLOUDFRONT_ID: ${{ secrets.CLOUDFRONT_ID }}
     steps:
-      # 1️⃣ Checkout do código
+      # Checkout do código
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2️⃣ Setup Node.js
+      # Setup Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 20
 
-      # 3️⃣ Instalar dependências
+      # Instalar dependências
       - name: Install dependencies
         run: npm ci
 
-      # 4️⃣ Build Angular na develop
+      # Build Angular na develop
       - name: Build Angular
         run: npm run build -- --configuration production
 
-      # 5️⃣ Configurar AWS CLI
+      # Configurar AWS CLI
       - name: Configure AWS CLI
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -59,7 +59,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      # 6️⃣ Detectar versão ativa/inativa
+      # Detectar versão ativa/inativa
       - name: Detect active/inactive version
         id: detect
         run: |
@@ -73,7 +73,7 @@ jobs:
           echo "INACTIVE=$INACTIVE" >> $GITHUB_ENV
           echo "previous-path=$ACTIVE" >> $GITHUB_OUTPUT
 
-      # 7️⃣ Deploy para pasta inativa com timestamp
+      # Deploy para pasta inativa com timestamp
       - name: Deploy to INACTIVE folder with timestamp
         run: |
           TIMESTAMP=$(date +%Y%m%d%H%M%S)
@@ -82,7 +82,7 @@ jobs:
           aws s3 sync dist/vyracare-app-shell s3://$S3_BUCKET_NAME/$INACTIVE_PATH --delete
           echo "DEPLOY_PATH=/$INACTIVE_PATH" >> $GITHUB_ENV
 
-      # 8️⃣ Cleanup builds antigas (mantendo 3 últimas)
+      # Cleanup builds antigas (mantendo 3 últimas)
       - name: Cleanup old builds
         run: |
           for folder in blue green; do
@@ -96,7 +96,7 @@ jobs:
             fi
           done
 
-      # 9️⃣ Swap CloudFront para nova versão
+      # Swap CloudFront para nova versão
       - name: Swap CloudFront
         run: |
           DISTRIBUTION_CONFIG=$(aws cloudfront get-distribution-config --id $CLOUDFRONT_ID)
@@ -105,7 +105,7 @@ jobs:
           UPDATED_CONFIG=$(echo $CONFIG | jq --arg path "$DEPLOY_PATH" '.Origins.Items[0].OriginPath=$path')
           aws cloudfront update-distribution --id $CLOUDFRONT_ID --if-match $ETAG --distribution-config "$UPDATED_CONFIG"
 
-      # 🔟 Invalidação de cache CloudFront
+      # Invalidação de cache CloudFront
       - name: Invalidate CloudFront cache
         run: aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_ID --paths "/*"
 
@@ -120,7 +120,7 @@ jobs:
             PR automática criada pelo pipeline.
             Branch de origem: `${{ inputs.branch-name }}`
 
-      # 1️⃣1️⃣ Rollback em caso de falha
+      # Rollback em caso de falha
       - name: Rollback if failure
         if: failure()
         run: |
@@ -130,3 +130,22 @@ jobs:
           CONFIG=$(echo $DISTRIBUTION_CONFIG | jq '.DistributionConfig')
           UPDATED_CONFIG=$(echo $CONFIG | jq --arg path "${{ steps.detect.outputs.previous-path }}" '.Origins.Items[0].OriginPath=$path')
           aws cloudfront update-distribution --id $CLOUDFRONT_ID --if-match $ETAG --distribution-config "$UPDATED_CONFIG"
+
+
+  open-pr-main:
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Open Pull Request to main
+        uses: repo-sync/pull-request@v2
+        with:
+          github_token: ${{ secrets.PAT_TOKEN }}
+          source_branch: ${{ inputs.branch-name }}
+          destination_branch: main
+          pr_title: "PR automatic ${{ inputs.branch-name }} into main"
+          pr_body: |
+            PR automática criada pelo pipeline.
+            Branch de origem: `${{ inputs.branch-name }}`

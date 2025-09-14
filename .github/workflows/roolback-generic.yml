@@ -1,4 +1,4 @@
-name: Rollback Blue-Green
+name: Rollback
 
 on:
   workflow_call:
