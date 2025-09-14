@@ -1,4 +1,4 @@
-name: Deploy Main
+name: Angular Shell CI/CD (Blue-Green)
 
 on:
   push:
@@ -8,13 +8,12 @@ on:
 jobs:
 
   # ================================
-  # Build
+  # 1️⃣ Build
   # ================================
   build:
     runs-on: ubuntu-latest
     outputs:
       build-folder: ${{ steps.set-output.outputs.build-folder }}
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -27,7 +26,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build Angular App
+      - name: Build Angular Shell
         run: npm run build -- --configuration production
 
       - name: Upload build artifact
@@ -41,7 +40,7 @@ jobs:
         run: echo "build-folder=dist/vyracare-app-shell" >> $GITHUB_OUTPUT
 
   # ================================
-  # Test
+  # 2️⃣ Test
   # ================================
   test:
     runs-on: ubuntu-latest
@@ -65,22 +64,22 @@ jobs:
           path: dist/vyracare-app-shell
 
       - name: Run unit tests
-        run: |
-          echo "Running Angular unit tests"
-          npm run test -- --watch=false --browsers=ChromeHeadless
+        run: npm run test -- --watch=false --browsers=ChromeHeadless
 
   # ================================
-  # Deploy (somente main)
+  # 3️⃣ Deploy (somente main)
   # ================================
   deploy:
     runs-on: ubuntu-latest
-    needs: [build, test]
+    needs: test
+    if: github.ref == 'refs/heads/main'
     env:
       S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
       CLOUDFRONT_ID: ${{ secrets.CLOUDFRONT_ID }}
       AWS_REGION: us-east-1
     outputs:
       previous-path: ${{ steps.detect.outputs.previous-path }}
+      deploy-path: ${{ steps.deploy.outputs.deploy-path }}
 
     steps:
       - name: Download build artifact
@@ -96,6 +95,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
+      # Detect active/inactive version
       - name: Detect active version
         id: detect
         run: |
@@ -110,46 +110,52 @@ jobs:
           echo "previous-path=$ACTIVE" >> $GITHUB_OUTPUT
           echo "Active=$ACTIVE | Inactive=$INACTIVE"
 
-      - name: Deploy to inactive folder
+      # Deploy build
+      - name: Deploy build to inactive folder
+        id: deploy
         run: |
-          echo "Deploying build to folder $INACTIVE"
+          INACTIVE=$INACTIVE
           TIMESTAMP=$(date +%Y%m%d%H%M%S)
-          aws s3 sync dist/vyracare-app-shell s3://$S3_BUCKET_NAME/$INACTIVE/$TIMESTAMP --delete
-          echo "DEPLOY_PATH=/$INACTIVE/$TIMESTAMP" >> $GITHUB_ENV
+          DEPLOY_PATH="$INACTIVE/$TIMESTAMP"
+          aws s3 sync dist/vyracare-app-shell s3://$S3_BUCKET_NAME/$DEPLOY_PATH --delete
+          echo "deploy-path=$DEPLOY_PATH" >> $GITHUB_OUTPUT
 
-      - name: Cleanup old builds
+      # Update deploy history
+      - name: Update deploy-history.json
         run: |
-          for folder in blue green; do
-            echo "Cleaning up old builds in $folder..."
-            builds=$(aws s3 ls s3://$S3_BUCKET_NAME/$folder/ | awk '{print $2}' | sort)
-            total=$(echo "$builds" | wc -l)
-            if [ $total -gt 3 ]; then
-              to_delete=$(echo "$builds" | head -n $(($total - 3)))
-              for d in $to_delete; do
-                echo "Deleting s3://$S3_BUCKET_NAME/$folder/$d"
-                aws s3 rm s3://$S3_BUCKET_NAME/$folder/$d --recursive
-              done
-            fi
-          done
+          HISTORY_FILE="deploy-history.json"
+          if aws s3 ls s3://$S3_BUCKET_NAME/$HISTORY_FILE; then
+            aws s3 cp s3://$S3_BUCKET_NAME/$HISTORY_FILE $HISTORY_FILE
+          else
+            echo "[]" > $HISTORY_FILE
+          fi
 
+          jq --arg path "$DEPLOY_PATH" '
+            map(.active = false) + [{"timestamp": "'$TIMESTAMP'", "path": $path, "active": true}]
+          ' $HISTORY_FILE > tmp.json && mv tmp.json $HISTORY_FILE
+
+          aws s3 cp $HISTORY_FILE s3://$S3_BUCKET_NAME/$HISTORY_FILE
+
+      # Swap CloudFront
       - name: Swap CloudFront to inactive
         run: |
           DISTRIBUTION_CONFIG=$(aws cloudfront get-distribution-config --id $CLOUDFRONT_ID)
           ETAG=$(echo $DISTRIBUTION_CONFIG | jq -r '.ETag')
           CONFIG=$(echo $DISTRIBUTION_CONFIG | jq '.DistributionConfig')
-          UPDATED_CONFIG=$(echo $CONFIG | jq --arg path "$DEPLOY_PATH" '.Origins.Items[0].OriginPath=$path')
+          UPDATED_CONFIG=$(echo $CONFIG | jq --arg path "/$DEPLOY_PATH" '.Origins.Items[0].OriginPath=$path')
           aws cloudfront update-distribution --id $CLOUDFRONT_ID --if-match $ETAG --distribution-config "$UPDATED_CONFIG"
 
+      # Invalidate cache
       - name: Invalidate CloudFront cache
         run: aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_ID --paths "/*"
 
   # ================================
-  # Rollback
+  # 4️⃣ Rollback automático
   # ================================
   rollback:
     runs-on: ubuntu-latest
     needs: deploy
-    if: failure()
+    if: failure() && github.ref == 'refs/heads/main'
     env:
       S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
       CLOUDFRONT_ID: ${{ secrets.CLOUDFRONT_ID }}
@@ -164,9 +170,12 @@ jobs:
 
       - name: Rollback CloudFront
         run: |
-          echo "Rollback triggered. Reverting to previous version: ${{ needs.deploy.outputs.previous-path }}"
+          HISTORY_FILE="deploy-history.json"
+          aws s3 cp s3://$S3_BUCKET_NAME/$HISTORY_FILE $HISTORY_FILE
+          PREVIOUS_PATH=$(jq -r '.[] | select(.active==false) | .path' $HISTORY_FILE | tail -n 1)
+          echo "Rolling back to $PREVIOUS_PATH"
           DISTRIBUTION_CONFIG=$(aws cloudfront get-distribution-config --id $CLOUDFRONT_ID)
           ETAG=$(echo $DISTRIBUTION_CONFIG | jq -r '.ETag')
           CONFIG=$(echo $DISTRIBUTION_CONFIG | jq '.DistributionConfig')
-          UPDATED_CONFIG=$(echo $CONFIG | jq --arg path "${{ needs.deploy.outputs.previous-path }}" '.Origins.Items[0].OriginPath=$path')
+          UPDATED_CONFIG=$(echo $CONFIG | jq --arg path "$PREVIOUS_PATH" '.Origins.Items[0].OriginPath=$path')
           aws cloudfront update-distribution --id $CLOUDFRONT_ID --if-match $ETAG --distribution-config "$UPDATED_CONFIG"
