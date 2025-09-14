@@ -1,4 +1,4 @@
-name: Angular CI Pipeline
+name: PR TO DEVELOP
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
       - 'feature/*'
 
 jobs:
-  call-ci-workflow:
+  ci-angular:
     uses: ./.github/workflows/ci-angular.yml
     with:
       branch-name: ${{ github.ref_name }}
@@ -27,7 +27,7 @@ jobs:
           github_token: ${{ secrets.PAT_TOKEN }}
           source_branch: ${{ github.ref_name }}
           destination_branch: develop
-          pr_title: "Merge ${{ github.ref_name }} into develop"
+          pr_title: "PR automatic ${{ github.ref_name }} into develop"
           pr_body: |
             PR automática criada pelo pipeline.
             Branch de origem: `${{ github.ref_name }}`

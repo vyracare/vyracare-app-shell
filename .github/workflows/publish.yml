@@ -1,4 +1,4 @@
-name: DEPLOY
+name: PUBLISH
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - develop  # Dispara quando houver merge na develop
 
 jobs:
-  call-cd:
+  publish:
     uses: ./.github/workflows/cd-angular.yml
     with:
       branch-name: ${{ github.ref_name }}
