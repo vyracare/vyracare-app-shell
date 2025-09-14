@@ -1,32 +1,48 @@
-name: CD Blue-Green from develop
+name: Angular CD (Blue-Green)
 
 on:
   push:
     branches:
-      - develop
+      - develop   # Dispara apenas quando há push/merge na develop
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
+    env:
+      S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
+      CLOUDFRONT_ID: ${{ secrets.CLOUDFRONT_ID }}
+      AWS_REGION: us-east-1
     steps:
-      - name: Download build artifact from last successful CI
-        uses: actions/download-artifact@v4
-        with:
-          name: angular-dist
-          path: dist/vyracare-app-shell
+      # 1️⃣ Checkout do código
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
+      # 2️⃣ Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      # 3️⃣ Instalar dependências
+      - name: Install dependencies
+        run: npm ci
+
+      # 4️⃣ Build Angular na develop
+      - name: Build Angular
+        run: npm run build -- --configuration production
+
+      # 5️⃣ Configurar AWS CLI
       - name: Configure AWS CLI
         uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
+          aws-region: ${{ env.AWS_REGION }}
 
-      - name: Detect active version
+      # 6️⃣ Detectar versão ativa/inativa
+      - name: Detect active/inactive version
         id: detect
         run: |
-          CLOUDFRONT_ID=${{ secrets.CLOUDFRONT_ID }}
           ACTIVE=$(aws cloudfront get-distribution --id $CLOUDFRONT_ID | jq -r '.Distribution.Origins.Items[0].OriginPath')
           if [[ "$ACTIVE" == "/blue" ]]; then
             INACTIVE="green"
@@ -36,29 +52,47 @@ jobs:
           echo "ACTIVE=$ACTIVE" >> $GITHUB_ENV
           echo "INACTIVE=$INACTIVE" >> $GITHUB_ENV
           echo "previous-path=$ACTIVE" >> $GITHUB_OUTPUT
+          echo "Active=$ACTIVE | Inactive=$INACTIVE"
 
-      - name: Deploy to inactive folder
+      # 7️⃣ Deploy para pasta inativa
+      - name: Deploy to INACTIVE folder
         run: |
           echo "Deploying build to folder $INACTIVE"
-          aws s3 sync dist/vyracare-app-shell s3://${{ secrets.S3_BUCKET_NAME }}/$INACTIVE --delete
+          aws s3 sync dist/vyracare-app-shell s3://$S3_BUCKET_NAME/$INACTIVE --delete
+          echo "DEPLOY_PATH=/$INACTIVE" >> $GITHUB_ENV
 
-      - name: Swap CloudFront to inactive
+      # 8️⃣ Cleanup builds antigas
+      - name: Cleanup old builds
         run: |
-          CLOUDFRONT_ID=${{ secrets.CLOUDFRONT_ID }}
+          for folder in blue green; do
+            builds=$(aws s3 ls s3://$S3_BUCKET_NAME/$folder/ | awk '{print $2}' | sort)
+            total=$(echo "$builds" | wc -l)
+            if [ $total -gt 3 ]; then
+              to_delete=$(echo "$builds" | head -n $(($total - 3)))
+              for d in $to_delete; do
+                aws s3 rm s3://$S3_BUCKET_NAME/$folder/$d --recursive
+              done
+            fi
+          done
+
+      # 9️⃣ Swap CloudFront para versão inativa
+      - name: Swap CloudFront
+        run: |
           DISTRIBUTION_CONFIG=$(aws cloudfront get-distribution-config --id $CLOUDFRONT_ID)
           ETAG=$(echo $DISTRIBUTION_CONFIG | jq -r '.ETag')
           CONFIG=$(echo $DISTRIBUTION_CONFIG | jq '.DistributionConfig')
-          UPDATED_CONFIG=$(echo $CONFIG | jq --arg path "/$INACTIVE" '.Origins.Items[0].OriginPath=$path')
+          UPDATED_CONFIG=$(echo $CONFIG | jq --arg path "$DEPLOY_PATH" '.Origins.Items[0].OriginPath=$path')
           aws cloudfront update-distribution --id $CLOUDFRONT_ID --if-match $ETAG --distribution-config "$UPDATED_CONFIG"
 
+      # 🔟 Invalidação de cache CloudFront
       - name: Invalidate CloudFront cache
-        run: aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_ID }} --paths "/*"
+        run: aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_ID --paths "/*"
 
+      # 1️⃣1️⃣ Rollback em caso de falha
       - name: Rollback if failure
         if: failure()
         run: |
           echo "Rollback triggered. Reverting to previous version: ${{ steps.detect.outputs.previous-path }}"
-          CLOUDFRONT_ID=${{ secrets.CLOUDFRONT_ID }}
           DISTRIBUTION_CONFIG=$(aws cloudfront get-distribution-config --id $CLOUDFRONT_ID)
           ETAG=$(echo $DISTRIBUTION_CONFIG | jq -r '.ETag')
           CONFIG=$(echo $DISTRIBUTION_CONFIG | jq '.DistributionConfig')
