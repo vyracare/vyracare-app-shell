@@ -3,7 +3,7 @@ name: Angular CD Pipeline
 on:
   push:
     branches:
-      - "main"
+      - 'main'
 
 jobs:
   call-cd-workflow:

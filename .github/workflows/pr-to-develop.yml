@@ -22,14 +22,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Create Pull Request to develop
-        uses: peter-evans/create-pull-request@v6
+      - name: Open Pull Request to develop
+        uses: repo-sync/pull-request@v2
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "chore: merge branch ${{ github.ref_name }} into develop"
-          branch: develop
-          base: develop
-          title: "Merge ${{ github.ref_name }} into develop"
-          body: |
+          github_token: ${{ secrets.PAT_TOKEN }}   # Personal Access Token com permissão de repo
+          source_branch: ${{ github.ref_name }}    # branch de origem (quem fez o push)
+          destination_branch: develop              # branch de destino
+          pr_title: "Merge ${{ github.ref_name }} into develop"
+          pr_body: |
             PR automática criada pelo pipeline.
             Branch de origem: `${{ github.ref_name }}`
