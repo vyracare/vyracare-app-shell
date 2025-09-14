@@ -1,0 +1,48 @@
+name: Deploy S3 with Timestamp
+
+on:
+  workflow_call:
+    inputs:
+      build-path:
+        description: 'Caminho do build a ser deployado'
+        required: true
+        type: string
+      inactive-folder:
+        description: 'Pasta inativa (blue ou green)'
+        required: true
+        type: string
+    secrets:
+      AWS_ACCESS_KEY_ID:
+        required: true
+      AWS_SECRET_ACCESS_KEY:
+        required: true
+      S3_BUCKET_NAME:
+        required: true
+      AWS_REGION:
+        required: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: ${{ secrets.AWS_REGION || 'us-east-1' }}
+      S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Configure AWS CLI
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy build to S3
+        id: deploy_s3
+        run: |
+          TIMESTAMP=$(date +%Y%m%d%H%M%S)
+          DEPLOY_PATH="${{ inputs.inactive-folder }}/$TIMESTAMP"
+          aws s3 sync ${{ inputs.build-path }} s3://$S3_BUCKET_NAME/$DEPLOY_PATH --delete
+          echo "DEPLOY_PATH=/$DEPLOY_PATH" >> $GITHUB_ENV
+          echo "DEPLOY_PATH=/$DEPLOY_PATH" >> $GITHUB_OUTPUT
