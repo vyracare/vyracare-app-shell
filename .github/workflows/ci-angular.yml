@@ -12,6 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       build-folder: ${{ steps.set-output.outputs.build-folder }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -60,34 +61,3 @@ jobs:
 
       - name: Run unit tests
         run: npm run test -- --watch=false --browsers=ChromeHeadless
-
-  open-pr-develop:
-    needs: test
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/heads/feat/') || startsWith(github.ref, 'refs/heads/fix/') || startsWith(github.ref, 'refs/heads/feature/')
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Open Pull Request to develop
-        id: open-pr
-        uses: repo-sync/pull-request@v2
-        with:
-          github_token: ${{ secrets.PAT_TOKEN }}  # PAT com escopo 'repo'
-          source_branch: ${{ github.ref_name }}
-          destination_branch: develop
-          pr_title: "PR automatic ${{ github.ref_name }} into develop"
-          pr_body: |
-            PR automática criada pelo pipeline.
-            Branch de origem: `${{ github.ref_name }}`
-          pr_draft: false
-          allow_empty: false
-
-      - name: Check PR creation result
-        run: |
-          if [ -z "${{ steps.open-pr.outputs.pull_request_url }}" ]; then
-            echo "⚠️ PR não criado! Verifique se o PAT tem permissão e se a branch de destino está protegida."
-            exit 1
-          else
-            echo "✅ PR criado com sucesso: ${{ steps.open-pr.outputs.pull_request_url }}"
-          fi
