@@ -1,4 +1,4 @@
-name: DEPLOY
+name: Angular CD Pipeline
 
 on:
   push:
@@ -6,94 +6,10 @@ on:
       - "main"
 
 jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    env:
-      S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
-      CLOUDFRONT_ID: ${{ secrets.CLOUDFRONT_ID }}
-      AWS_REGION: us-east-1
-    outputs:
-      previous-path: ${{ steps.detect.outputs.active-path }}
-      deploy-path: ${{ steps.deploy-folder.outputs.deploy-path }}
-
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: angular-dist
-          path: dist/vyracare-app-shell
-
-      - uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Detect active/inactive versions
-        id: detect
-        run: |
-          ACTIVE=$(aws cloudfront get-distribution --id $CLOUDFRONT_ID | jq -r '.Distribution.Origins.Items[0].OriginPath')
-          if [[ "$ACTIVE" == "/blue"* ]]; then
-            INACTIVE="green"
-          else
-            INACTIVE="blue"
-          fi
-          echo "ACTIVE=$ACTIVE" >> $GITHUB_ENV
-          echo "INACTIVE=$INACTIVE" >> $GITHUB_ENV
-          echo "active-path=$ACTIVE" >> $GITHUB_OUTPUT
-
-      - name: Deploy to S3 inactive folder with timestamp
-        id: deploy-folder
-        run: |
-          TIMESTAMP=$(date +%Y%m%d%H%M%S)
-          DEPLOY_PATH="/$INACTIVE/$TIMESTAMP"
-          aws s3 sync dist/vyracare-app-shell s3://$S3_BUCKET_NAME$DEPLOY_PATH --delete
-          echo "deploy-path=$DEPLOY_PATH" >> $GITHUB_OUTPUT
-
-      - name: Cleanup old builds
-        run: |
-          for folder in blue green; do
-            builds=$(aws s3 ls s3://$S3_BUCKET_NAME/$folder/ | awk '{print $2}' | sort)
-            total=$(echo "$builds" | wc -l)
-            if [ $total -gt 3 ]; then
-              to_delete=$(echo "$builds" | head -n $(($total - 3)))
-              for d in $to_delete; do
-                aws s3 rm s3://$S3_BUCKET_NAME/$folder/$d --recursive
-              done
-            fi
-          done
-
-      - name: Swap CloudFront to new inactive version
-        run: |
-          DISTRIBUTION_CONFIG=$(aws cloudfront get-distribution-config --id $CLOUDFRONT_ID)
-          ETAG=$(echo $DISTRIBUTION_CONFIG | jq -r '.ETag')
-          CONFIG=$(echo $DISTRIBUTION_CONFIG | jq '.DistributionConfig')
-          UPDATED_CONFIG=$(echo $CONFIG | jq --arg path "${{ steps.deploy-folder.outputs.deploy-path }}" '.Origins.Items[0].OriginPath=$path')
-          aws cloudfront update-distribution --id $CLOUDFRONT_ID --if-match $ETAG --distribution-config "$UPDATED_CONFIG"
-
-      - name: Invalidate CloudFront cache
-        run: aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_ID --paths "/*"
-
-  rollback:
-    runs-on: ubuntu-latest
-    needs: deploy
-    if: failure()
-    env:
-      CLOUDFRONT_ID: ${{ secrets.CLOUDFRONT_ID }}
-      AWS_REGION: us-east-1
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-    steps:
-      - uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Rollback CloudFront
-        run: |
-          PREVIOUS_PATH="${{ needs.deploy.outputs.previous-path }}"
-          DISTRIBUTION_CONFIG=$(aws cloudfront get-distribution-config --id $CLOUDFRONT_ID)
-          ETAG=$(echo $DISTRIBUTION_CONFIG | jq -r '.ETag')
-          CONFIG=$(echo $DISTRIBUTION_CONFIG | jq '.DistributionConfig')
-          UPDATED_CONFIG=$(echo $CONFIG | jq --arg path "$PREVIOUS_PATH" '.Origins.Items[0].OriginPath=$path')
-          aws cloudfront update-distribution --id $CLOUDFRONT_ID --if-match $ETAG --distribution-config "$UPDATED_CONFIG"
+  call-cd-workflow:
+    uses: ./.github/workflows/cd-bluegreen.yml
+    with:
+      s3-bucket: ${{ secrets.S3_BUCKET_NAME }}
+      cloudfront-id: ${{ secrets.CLOUDFRONT_ID }}
+      aws-region: us-east-1
+      build-path: dist/vyracare-app-shell
