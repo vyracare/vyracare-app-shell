@@ -7,7 +7,7 @@ on:
 jobs:
 
   # ================================
-  # Build Angular
+  # 1️⃣ Build Angular
   # ================================
   build:
     runs-on: ubuntu-latest
@@ -16,12 +16,13 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
@@ -34,19 +35,20 @@ jobs:
         run: echo "build-folder=./dist/vyracare-app-shell" >> $GITHUB_OUTPUT
 
   # ================================
-  # Testes Unitários
+  # 2️⃣ Testes Unitários
   # ================================
   test:
     runs-on: ubuntu-latest
     needs: build
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
@@ -61,7 +63,7 @@ jobs:
           path: coverage/
 
   # ================================
-  # Deploy para pasta inativa
+  # 3️⃣ Deploy direto para pasta inativa (sem timestamp)
   # ================================
   deploy:
     runs-on: ubuntu-latest
@@ -77,8 +79,8 @@ jobs:
       inactive-version: ${{ steps.detect.outputs.inactive-version }}
 
     steps:
-      - name: Configure AWS CLI
-        uses: aws-actions/configure-aws-credentials@v2
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -100,31 +102,16 @@ jobs:
           echo "inactive-version=$INACTIVE" >> $GITHUB_OUTPUT
           echo "previous-path=$ACTIVE" >> $GITHUB_OUTPUT
 
-      # Deploy para pasta inativa com timestamp
+      # Deploy sobrescrevendo pasta inativa
       - name: Deploy to inactive folder
         id: set-folder
         run: |
-          TIMESTAMP=$(date +%Y%m%d%H%M%S)
-          INACTIVE_FOLDER="$INACTIVE/$TIMESTAMP"
+          INACTIVE_FOLDER="$INACTIVE"
           aws s3 sync ./dist/vyracare-app-shell s3://vyracare-app-shell/$INACTIVE_FOLDER --delete
           echo "inactive-folder=$INACTIVE_FOLDER" >> $GITHUB_OUTPUT
 
-      # Cleanup builds antigas
-      - name: Cleanup old builds
-        run: |
-          for folder in blue green; do
-            builds=$(aws s3 ls s3://vyracare-app-shell/$folder/ | awk '{print $2}' | sort)
-            delete_count=$(echo "$builds" | wc -l)
-            if [ $delete_count -gt 3 ]; then
-              to_delete=$(echo "$builds" | head -n $(($delete_count - 3)))
-              for d in $to_delete; do
-                aws s3 rm s3://vyracare-app-shell/$folder/$d --recursive
-              done
-            fi
-          done
-
   # ================================
-  # Swap CloudFront e Rollback
+  # 4️⃣ Swap CloudFront e Rollback
   # ================================
   swap-and-rollback:
     runs-on: ubuntu-latest
@@ -134,15 +121,15 @@ jobs:
       CLOUDFRONT_ID: ${{ secrets.CLOUDFRONT_ID }}
       AWS_REGION: us-east-1
     steps:
-      - name: Configure AWS CLI
-        uses: aws-actions/configure-aws-credentials@v2
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
       # Swap CloudFront
-      - name: Swap CloudFront
+      - name: Swap CloudFront to new version
         id: swap
         run: |
           DISTRIBUTION_CONFIG=$(aws cloudfront get-distribution-config --id $CLOUDFRONT_ID)
