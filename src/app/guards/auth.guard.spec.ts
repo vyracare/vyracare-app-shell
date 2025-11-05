@@ -1,11 +1,12 @@
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
+import { RouterTestingModule } from '@angular/router/testing';
 import { AuthService } from '../services/auth/auth.service';
 import { AuthGuard } from './auth.guard';
 
 describe('AuthGuard', () => {
   let authService: jest.Mocked<AuthService>;
-  let navigateMock: jest.Mock;
+  let router: Router;
 
   beforeEach(() => {
     authService = {
@@ -17,35 +18,32 @@ describe('AuthGuard', () => {
       isAuthenticated: jest.fn(),
       isLoggedIn: jest.fn()
     } as jest.Mocked<AuthService>;
-    navigateMock = jest.fn().mockResolvedValue(true);
 
     TestBed.configureTestingModule({
-      providers: [
-        { provide: AuthService, useValue: authService },
-        { provide: Router, useValue: { navigate: navigateMock } as Partial<Router> }
-      ]
+      imports: [RouterTestingModule.withRoutes([])],
+      providers: [{ provide: AuthService, useValue: authService }]
     });
+
+    router = TestBed.inject(Router);
   });
 
   afterEach(() => {
     jest.clearAllMocks();
   });
 
-  it('should allow navigation when user is logged in', () => {
-    authService.isLoggedIn.mockReturnValue(true);
+  it('should allow navigation when user is authenticated', () => {
+    authService.isAuthenticated.mockReturnValue(true);
 
     const canActivate = TestBed.runInInjectionContext(() => AuthGuard({} as any, {} as any));
 
     expect(canActivate).toBe(true);
-    expect(navigateMock).not.toHaveBeenCalled();
   });
 
-  it('should redirect to login when user is not logged in', () => {
-    authService.isLoggedIn.mockReturnValue(false);
+  it('should redirect to login when user is not authenticated', () => {
+    authService.isAuthenticated.mockReturnValue(false);
 
     const canActivate = TestBed.runInInjectionContext(() => AuthGuard({} as any, {} as any));
 
-    expect(canActivate).toBe(false);
-    expect(navigateMock).toHaveBeenCalledWith(['/login']);
+    expect(canActivate).toEqual(router.createUrlTree(['/login']));
   });
 });
