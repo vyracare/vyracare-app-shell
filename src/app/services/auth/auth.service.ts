@@ -9,7 +9,7 @@ import { environment } from '../../../environments/environments';
 })
 export class AuthService {
   private tokenKey = 'jwtToken';
-  private apiUrl = environment.apiUrl;;
+  private apiUrl = environment.apiUrl;
 
   constructor(private http: HttpClient, private router: Router) {}
 
@@ -38,19 +38,29 @@ export class AuthService {
     const token = this.getToken();
     if (!token) return false;
 
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    const exp = payload.exp * 1000;
+    try {
+      const [, payloadPart] = token.split('.');
+      if (!payloadPart) {
+        this.logout();
+        return false;
+      }
 
-    if (Date.now() > exp) {
+      const payload = JSON.parse(atob(payloadPart));
+      const exp = Number(payload?.exp) * 1000;
+
+      if (!Number.isFinite(exp) || Date.now() > exp) {
+        this.logout();
+        return false;
+      }
+      return true;
+    } catch {
       this.logout();
       return false;
     }
-    return true;
   }
 
   isLoggedIn(): boolean {
-    const token = localStorage.getItem('token');
-    return !!token;
+    return !!this.getToken();
   }
 
 }
