@@ -1,0 +1,82 @@
+.register-card {
+  max-width: 420px;
+  margin: 5% auto;
+  padding: 2rem;
+  border-radius: 16px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+  background: #ffffff;
+
+  .header {
+    text-align: center;
+    margin-bottom: 2rem;
+
+    .logo {
+      width: 120px;
+      margin-bottom: 1rem;
+    }
+
+    h2 {
+      font-size: 1.8rem;
+      color: #5a2d82; // lilás Vyracare
+      margin: 0.5rem 0;
+    }
+
+    .subtitle {
+      font-size: 1rem;
+      color: #7a7a7a;
+    }
+  }
+
+  .register-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+
+    .full-width {
+      width: 100%;
+    }
+  }
+
+  .actions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 1rem;
+
+    button {
+      min-width: 48%;
+      font-weight: 600;
+      text-transform: none;
+
+      &.mat-raised-button {
+        background: linear-gradient(135deg, #a64ac9, #ff8dc7);
+        color: #fff;
+      }
+
+      &.mat-stroked-button {
+        border-color: #a64ac9;
+        color: #a64ac9;
+
+        &:hover {
+          background: rgba(166, 74, 201, 0.05);
+        }
+      }
+    }
+  }
+
+  .error-container {
+    margin-top: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #d32f2f;
+    font-weight: 500;
+    font-size: 0.9rem;
+    background: #fdecea;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+
+    mat-icon {
+      font-size: 20px;
+    }
+  }
+}

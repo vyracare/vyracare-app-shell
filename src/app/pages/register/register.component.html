@@ -1,0 +1,31 @@
+<div class="register-card">
+  <div class="header">
+    <!-- <img src="assets/logo-vyracare.png" alt="Vyracare Logo" class="logo" /> -->
+    <h2>Criar Conta</h2>
+    <p class="subtitle">Preencha os campos abaixo para começar</p>
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" class="register-form">
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Email</mat-label>
+      <input matInput type="email" formControlName="email" />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Senha</mat-label>
+      <input matInput type="password" formControlName="password" />
+    </mat-form-field>
+
+    <div class="actions">
+      <button mat-stroked-button type="button" routerLink="/login">Já tenho conta</button>
+      <button mat-raised-button type="submit" color="primary">Registrar</button>
+    </div>
+  </form>
+
+  @if (error) {
+    <div class="error-container">
+      <span>{{ error }}</span>
+    </div>
+  }
+</div>
