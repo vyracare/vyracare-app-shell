@@ -61,7 +61,7 @@ describe('LoginComponent', () => {
     component.onSubmit();
 
     expect(authService.login).toHaveBeenCalledWith(credentials);
-    expect(navigateMock).toHaveBeenCalledWith(['/']);
+    expect(navigateMock).toHaveBeenCalledWith(['/dashboard']);
     expect(component.loading).toBe(false);
     expect(component.error).toBeNull();
   });

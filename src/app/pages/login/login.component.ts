@@ -49,7 +49,7 @@ export class LoginComponent {
     this.authService.login({ email, password }).subscribe({
       next: () => {
         this.loading = false;
-        this.router.navigate(['/']); // Redireciona para dashboard
+        this.router.navigate(['/dashboard']);
       },
       error: (err) => {
         this.loading = false;
