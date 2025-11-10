@@ -1,47 +1,73 @@
-<mat-card class="login-card vyracare-theme">
-  <div class="header">
-    <!-- <img src="assets/vyracare-logo.svg" alt="Vyracare Logo" class="logo" /> -->
-    <h2>Bem-vindo(a) ao Vyracare</h2>
-    <p class="subtitle">Cuide de você com tecnologia e confiança</p>
+<div class="page-wrapper">
+  <div class="container">
+    <div class="login-wrap">
+      <div class="login-content">
+        <div class="login-logo">
+          <div class="brand-mark">Vyracare</div>
+          <p>Bem-vindo(a)! Acesse sua conta para continuar.</p>
+        </div>
+
+        <form class="login-form" [formGroup]="form" (ngSubmit)="onSubmit()">
+          <div class="form-group">
+            <label for="email">E-mail</label>
+            <input
+              id="email"
+              type="email"
+              class="form-control"
+              formControlName="email"
+              placeholder="Digite seu e-mail"
+              [class.invalid]="form.controls['email'].invalid && (form.controls['email'].dirty || form.controls['email'].touched)"
+            />
+            @if (form.controls['email'].invalid && (form.controls['email'].dirty || form.controls['email'].touched)) {
+              <small class="field-error">
+                @if (form.controls['email'].hasError('required')) {
+                  E-mail é obrigatório
+                } @else {
+                  E-mail inválido
+                }
+              </small>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="password">Senha</label>
+            <input
+              id="password"
+              type="password"
+              class="form-control"
+              formControlName="password"
+              placeholder="Digite sua senha"
+              [class.invalid]="form.controls['password'].invalid && (form.controls['password'].dirty || form.controls['password'].touched)"
+            />
+            @if (form.controls['password'].invalid && (form.controls['password'].dirty || form.controls['password'].touched)) {
+              <small class="field-error">
+                Senha é obrigatória
+              </small>
+            }
+          </div>
+
+          <div class="form-helper">
+            <span>Esqueceu a senha? <a href="mailto:suporte@vyracare.com.br">Fale com o suporte</a></span>
+          </div>
+
+          <button class="au-btn au-btn--block btn-primary m-b-20" type="submit" [disabled]="loading || form.invalid">
+            {{ loading ? 'Entrando...' : 'Entrar' }}
+          </button>
+        </form>
+
+        @if (error) {
+          <div class="error-message">
+            {{ error }}
+          </div>
+        }
+
+        <div class="register-link">
+          <p>Ainda não tem uma conta?</p>
+          <button type="button" class="ghost-button" (click)="goToRegister()">
+            Crie uma agora!
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
-
-  <form [formGroup]="form" (ngSubmit)="onSubmit()" class="login-form">
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Email</mat-label>
-      <input matInput type="email" formControlName="email" placeholder="Digite seu e-mail" />
-
-      @if (form.controls['email'].hasError('required')) {
-        <mat-error>E-mail é obrigatório</mat-error>
-      }
-      @if (form.controls['email'].hasError('email')) {
-        <mat-error>E-mail inválido</mat-error>
-      }
-    </mat-form-field>
-
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Senha</mat-label>
-      <input matInput type="password" formControlName="password" placeholder="Digite sua senha" />
-      @if (form.controls['password'].hasError('required')) {
-        <mat-error>Senha é obrigatória</mat-error>
-      }
-      @if (form.controls['password'].hasError('minlength')) {
-        <mat-error>Mínimo de 6 caracteres</mat-error>
-      }
-    </mat-form-field>
-
-    <div class="actions">
-      <button mat-raised-button color="primary" type="submit" [disabled]="loading">
-        Entrar
-      </button>
-      <button mat-stroked-button color="accent" type="button" (click)="goToRegister()">
-        Criar Conta
-      </button>
-    </div>
-  </form>
-
-  @if (error) {
-    <div class="error-container">
-      <span>{{ error }}</span>
-    </div>
-  }
-</mat-card>
+</div>

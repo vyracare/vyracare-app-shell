@@ -29,12 +29,12 @@
 						"styles": [
 							"src/styles.scss"
 						],
-						"main": "src/main.ts",
-						"outputPath": "dist/vyracare-app-shell",
-						"index": "src/index.html",
-						"extraWebpackConfig": "webpack.config.js",
-						"commonChunk": false
-					},
+          "main": "src/main.ts",
+          "outputPath": "dist/vyracare-app-shell",
+          "index": "src/index.html",
+          "extraWebpackConfig": "webpack.config.js",
+          "commonChunk": false
+        },
 					"configurations": {
 						"production": {
 							"budgets": [
