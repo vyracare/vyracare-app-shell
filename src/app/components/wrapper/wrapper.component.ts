@@ -1,12 +1,11 @@
 import { ChangeDetectionStrategy, Component, HostListener, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
-import { MatIconModule } from '@angular/material/icon';
 
 @Component({
   selector: 'vyracare-wrapper',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, MatIconModule],
+  imports: [CommonModule, RouterOutlet],
   templateUrl: './wrapper.component.html',
   styleUrls: ['./wrapper.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush

@@ -1,1 +1,7 @@
-<vyracare-wrapper></vyracare-wrapper>
+<ng-container *ngIf="showShell(); else authRoutes">
+  <vyracare-wrapper></vyracare-wrapper>
+</ng-container>
+
+<ng-template #authRoutes>
+  <router-outlet></router-outlet>
+</ng-template>

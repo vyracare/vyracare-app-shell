@@ -38,8 +38,12 @@ describe('WrapperComponent', () => {
     expect(component['notificationsOpen']()).toBe(false);
 
     const button = fixture.debugElement.query(By.css('.notifications'));
-    button.triggerEventHandler('click');
+    const event = new MouseEvent('click');
+    button.triggerEventHandler('click', event);
     fixture.detectChanges();
     expect(component['notificationsOpen']()).toBe(true);
+
+    document.dispatchEvent(new MouseEvent('click'));
+    expect(component['notificationsOpen']()).toBe(false);
   });
 });
