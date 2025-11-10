@@ -1,31 +1,75 @@
-<div class="register-card">
-  <div class="header">
-    <!-- <img src="assets/logo-vyracare.png" alt="Vyracare Logo" class="logo" /> -->
-    <h2>Criar Conta</h2>
-    <p class="subtitle">Preencha os campos abaixo para começar</p>
+<div class="page-wrapper">
+  <div class="container">
+    <div class="login-wrap">
+      <div class="login-content">
+        <div class="login-logo">
+          <div class="brand-mark">Vyracare</div>
+          <p>Crie sua conta e simplifique sua rotina de cuidado.</p>
+        </div>
+
+        <form class="login-form" [formGroup]="form" (ngSubmit)="onSubmit()">
+          <div class="form-group">
+            <label for="register-email">E-mail</label>
+            <input
+              id="register-email"
+              type="email"
+              class="form-control"
+              formControlName="email"
+              placeholder="exemplo@vyracare.com"
+              [class.invalid]="form.controls['email'].invalid && (form.controls['email'].dirty || form.controls['email'].touched)"
+            />
+            @if (form.controls['email'].invalid && (form.controls['email'].dirty || form.controls['email'].touched)) {
+              <small class="field-error">
+                @if (form.controls['email'].hasError('required')) {
+                  E-mail é obrigatório
+                } @else {
+                  Utilize um e-mail válido
+                }
+              </small>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="register-password">Senha</label>
+            <input
+              id="register-password"
+              type="password"
+              class="form-control"
+              formControlName="password"
+              placeholder="Crie uma senha"
+              [class.invalid]="form.controls['password'].invalid && (form.controls['password'].dirty || form.controls['password'].touched)"
+            />
+            @if (form.controls['password'].invalid && (form.controls['password'].dirty || form.controls['password'].touched)) {
+              <small class="field-error">
+                @if (form.controls['password'].hasError('required')) {
+                  Senha é obrigatória
+                } @else {
+                  A senha precisa ter no mínimo 6 caracteres
+                }
+              </small>
+            }
+          </div>
+
+          <p class="info-text">A senha precisa ter pelo menos 6 caracteres.</p>
+
+          <button class="au-btn au-btn--block btn-primary m-b-20" type="submit" [disabled]="loading || form.invalid">
+            {{ loading ? 'Criando conta...' : 'Criar conta' }}
+          </button>
+        </form>
+
+        @if (error) {
+          <div class="error-message">
+            {{ error }}
+          </div>
+        }
+
+        <div class="register-link">
+          <p>Já tem uma conta?</p>
+          <button type="button" class="ghost-button" (click)="goToLogin()">
+            Acesse sua conta
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
-
-  <form [formGroup]="form" (ngSubmit)="onSubmit()" class="register-form">
-
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Email</mat-label>
-      <input matInput type="email" formControlName="email" />
-    </mat-form-field>
-
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Senha</mat-label>
-      <input matInput type="password" formControlName="password" />
-    </mat-form-field>
-
-    <div class="actions">
-      <button mat-stroked-button type="button" routerLink="/login">Já tenho conta</button>
-      <button mat-raised-button type="submit" color="primary">Registrar</button>
-    </div>
-  </form>
-
-  @if (error) {
-    <div class="error-container">
-      <span>{{ error }}</span>
-    </div>
-  }
 </div>
