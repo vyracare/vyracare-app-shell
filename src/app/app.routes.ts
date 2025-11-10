@@ -3,7 +3,7 @@ import { loadRemoteModule } from '@angular-architects/module-federation';
 import { AuthGuard } from './guards/auth.guard';
 import { LoginComponent } from './pages/login/login.component';
 import { RegisterComponent } from './pages/register/register.component';
-import { DashboardUnavailableComponent } from './pages/dashboard-unavailable/dashboard-unavailable.component';
+import { ErrorComponent } from './pages/error/error.component';
 import { environment } from '../environments/environments';
 
 export const routes: Routes = [
@@ -22,7 +22,7 @@ export const routes: Routes = [
         .then((m) => m.App)
         .catch((err) => {
           console.error('Não foi possível carregar o dashboard remoto', err);
-          return DashboardUnavailableComponent;
+          return ErrorComponent;
         })
   },
 ];
