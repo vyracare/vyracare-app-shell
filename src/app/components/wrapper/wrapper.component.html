@@ -1,0 +1,51 @@
+<div class="shell-layout">
+  <header class="navbar">
+    <div class="logo-area">
+      <span class="logo-mark">Vyra<span>Care</span></span>
+      <p>Gestão integrada para clínicas e profissionais de saúde</p>
+    </div>
+
+    <nav class="navbar-links">
+      <a href="#">Dashboard</a>
+      <a href="#">Agenda</a>
+      <a href="#">Pacientes</a>
+      <a href="#">Relatórios</a>
+    </nav>
+
+    <div class="navbar-profile">
+      <div class="avatar">VB</div>
+      <div>
+        <strong>Vyracare Brasil</strong>
+        <small>Administrador</small>
+      </div>
+    </div>
+  </header>
+
+  <div class="shell-body">
+    <aside class="sidebar">
+      <div class="sidebar-group">
+        <p class="sidebar-label">Área Clínica</p>
+        <button type="button" class="active">Dashboard</button>
+        <button type="button">Agenda</button>
+        <button type="button">Pacientes</button>
+      </div>
+
+      <div class="sidebar-group">
+        <p class="sidebar-label">Operacional</p>
+        <button type="button">Financeiro</button>
+        <button type="button">Relatórios</button>
+        <button type="button">Configurações</button>
+      </div>
+
+      <div class="support-card">
+        <strong>Precisa de ajuda?</strong>
+        <p>Nossa equipe está pronta para apoiar sua operação.</p>
+        <a href="mailto:suporte@vyracare.com">suporte@vyracare.com</a>
+      </div>
+    </aside>
+
+    <main class="shell-main">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>

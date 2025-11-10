@@ -1,0 +1,152 @@
+.shell-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #f6f4ff;
+}
+
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 2rem;
+  background: #fff;
+  border-bottom: 1px solid rgba(90, 59, 231, 0.1);
+  box-shadow: 0 8px 30px rgba(44, 56, 120, 0.06);
+}
+
+.logo-area {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+
+  .logo-mark {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #5a3be7;
+
+    span {
+      color: #ff6c88;
+    }
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: #6f7494;
+  }
+}
+
+.navbar-links {
+  display: flex;
+  gap: 1.5rem;
+
+  a {
+    text-decoration: none;
+    font-weight: 600;
+    color: #5a6180;
+  }
+}
+
+.navbar-profile {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+
+  .avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6e4ef5, #5ac4ff);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+  }
+
+  strong {
+    display: block;
+    color: #333b60;
+  }
+
+  small {
+    color: #6f7494;
+  }
+}
+
+.shell-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.sidebar {
+  width: 240px;
+  padding: 2rem 1.5rem;
+  background: #fff;
+  border-right: 1px solid rgba(90, 59, 231, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.sidebar-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  .sidebar-label {
+    margin: 0;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    color: #8a8fb5;
+    letter-spacing: 0.05em;
+  }
+
+  button {
+    border: none;
+    background: transparent;
+    padding: 0.65rem 0.5rem;
+    text-align: left;
+    border-radius: 8px;
+    font-weight: 600;
+    color: #4a5276;
+    cursor: pointer;
+
+    &.active {
+      background: linear-gradient(135deg, #f8f4ff, #edf6ff);
+      color: #5a3be7;
+    }
+  }
+}
+
+.support-card {
+  margin-top: auto;
+  padding: 1rem;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(110, 78, 245, 0.12), rgba(90, 196, 255, 0.12));
+
+  strong {
+    display: block;
+    margin-bottom: 0.25rem;
+  }
+
+  p {
+    margin: 0 0 0.5rem;
+    font-size: 0.85rem;
+    color: #5a6180;
+  }
+
+  a {
+    text-decoration: none;
+    font-weight: 600;
+    color: #5a3be7;
+  }
+}
+
+.shell-main {
+  flex: 1;
+  padding: 2rem;
+  overflow: auto;
+}
