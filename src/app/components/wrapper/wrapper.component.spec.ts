@@ -29,4 +29,17 @@ describe('WrapperComponent', () => {
     const outlet = fixture.debugElement.query(By.directive(RouterOutlet));
     expect(outlet).not.toBeNull();
   });
+
+  it('should toggle the notifications dropdown', () => {
+    const fixture = TestBed.createComponent(WrapperComponent);
+    const component = fixture.componentInstance;
+    fixture.detectChanges();
+
+    expect(component['notificationsOpen']()).toBe(false);
+
+    const button = fixture.debugElement.query(By.css('.notifications'));
+    button.triggerEventHandler('click');
+    fixture.detectChanges();
+    expect(component['notificationsOpen']()).toBe(true);
+  });
 });

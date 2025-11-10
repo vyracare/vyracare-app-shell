@@ -1,13 +1,26 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, HostListener, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
+import { MatIconModule } from '@angular/material/icon';
 
 @Component({
   selector: 'vyracare-wrapper',
   standalone: true,
-  imports: [CommonModule, RouterOutlet],
+  imports: [CommonModule, RouterOutlet, MatIconModule],
   templateUrl: './wrapper.component.html',
   styleUrls: ['./wrapper.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class WrapperComponent {}
+export class WrapperComponent {
+  protected readonly notificationsOpen = signal(false);
+
+  toggleNotifications(event: Event) {
+    event.stopPropagation();
+    this.notificationsOpen.update((value) => !value);
+  }
+
+  @HostListener('document:click')
+  closeNotifications() {
+    this.notificationsOpen.set(false);
+  }
+}

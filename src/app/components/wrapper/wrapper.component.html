@@ -5,12 +5,36 @@
       <p>Gestão integrada para clínicas e profissionais de saúde</p>
     </div>
 
-    <nav class="navbar-links">
-      <a href="#">Dashboard</a>
-      <a href="#">Agenda</a>
-      <a href="#">Pacientes</a>
-      <a href="#">Relatórios</a>
-    </nav>
+    <div class="navbar-search">
+      <label class="search-field">
+        <span class="material-symbols-outlined">search</span>
+        <input type="search" placeholder="Busque por pacientes, procedimentos ou arquivos" />
+      </label>
+    </div>
+
+    <div class="notifications" (click)="toggleNotifications($event)">
+      <span class="material-symbols-outlined bell">notifications</span>
+      <span class="badge">3</span>
+
+      <div class="notif-dropdown" [class.open]="notificationsOpen()" (click)="$event.stopPropagation()">
+        <h4>Notificações recentes</h4>
+        <ul>
+          <li>
+            <strong>Agenda de hoje</strong>
+            <p>Você possui 8 atendimentos confirmados.</p>
+          </li>
+          <li>
+            <strong>Financeiro</strong>
+            <p>3 boletos aguardando confirmação.</p>
+          </li>
+          <li>
+            <strong>Suporte</strong>
+            <p>Novo chamado respondido por nossa equipe.</p>
+          </li>
+        </ul>
+        <button type="button" class="view-all">Ver todas</button>
+      </div>
+    </div>
 
     <div class="navbar-profile">
       <div class="avatar">VB</div>
