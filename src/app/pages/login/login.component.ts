@@ -39,8 +39,16 @@ export class LoginComponent {
     const { email, password } = this.form.value;
 
     this.authService.login({ email, password }).subscribe({
-      next: () => {
+      next: (response) => {
         this.loading = false;
+
+        const token = response?.token ?? response?.accessToken ?? response?.access_token;
+        if (!token) {
+          this.error = 'Não foi possível validar a sessão. Tente novamente.';
+          return;
+        }
+
+        this.authService.saveToken(token);
         this.router.navigate(['/dashboard']);
       },
       error: (err) => {

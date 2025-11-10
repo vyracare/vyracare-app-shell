@@ -50,7 +50,24 @@ describe('LoginComponent', () => {
     expect(component.loading).toBe(false);
   });
 
-  it('should call authService.login and navigate on submit', () => {
+  it('should save the token and navigate on submit', () => {
+    const fixture = TestBed.createComponent(LoginComponent);
+    const component = fixture.componentInstance;
+    const credentials = { email: 'user@example.com', password: 'P@ssw0rd' };
+
+    authService.login.mockReturnValue(of({ token: 'jwt' }));
+
+    component.form.setValue(credentials);
+    component.onSubmit();
+
+    expect(authService.login).toHaveBeenCalledWith(credentials);
+    expect(authService.saveToken).toHaveBeenCalledWith('jwt');
+    expect(navigateMock).toHaveBeenCalledWith(['/dashboard']);
+    expect(component.loading).toBe(false);
+    expect(component.error).toBeNull();
+  });
+
+  it('should show an error when the response does not contain a token', () => {
     const fixture = TestBed.createComponent(LoginComponent);
     const component = fixture.componentInstance;
     const credentials = { email: 'user@example.com', password: 'P@ssw0rd' };
@@ -60,12 +77,11 @@ describe('LoginComponent', () => {
     component.form.setValue(credentials);
     component.onSubmit();
 
-    expect(authService.login).toHaveBeenCalledWith(credentials);
-    expect(navigateMock).toHaveBeenCalledWith(['/dashboard']);
-    expect(component.loading).toBe(false);
-    expect(component.error).toBeNull();
+    expect(authService.login).toHaveBeenCalled();
+    expect(authService.saveToken).not.toHaveBeenCalled();
+    expect(navigateMock).not.toHaveBeenCalled();
+    expect(component.error).toBe('Não foi possível validar a sessão. Tente novamente.');
   });
-
   it('should handle login errors', () => {
     const fixture = TestBed.createComponent(LoginComponent);
     const component = fixture.componentInstance;
