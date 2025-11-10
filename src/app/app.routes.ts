@@ -3,6 +3,8 @@ import { loadRemoteModule } from '@angular-architects/module-federation';
 import { AuthGuard } from './guards/auth.guard';
 import { LoginComponent } from './pages/login/login.component';
 import { RegisterComponent } from './pages/register/register.component';
+import { ErrorComponent } from './pages/error/error.component';
+import { environment } from '../environments/environments';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
@@ -11,10 +13,16 @@ export const routes: Routes = [
   {
     path: 'dashboard',
     canActivate: [AuthGuard],
-    loadChildren: () =>
+    loadComponent: () =>
       loadRemoteModule({
-        remoteName: 'dashboard',
+        type: 'module',
+        remoteEntry: environment.dashboardRemoteEntry,
         exposedModule: './App'
-      }).then(m => m.App)
+      })
+        .then((m) => m.App)
+        .catch((err) => {
+          console.error('Não foi possível carregar o dashboard remoto', err);
+          return ErrorComponent;
+        })
   },
 ];
