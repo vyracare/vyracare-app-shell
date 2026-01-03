@@ -6,12 +6,16 @@ import { AuthService } from '../../services/auth/auth.service';
 import { WrapperComponent } from './wrapper.component';
 
 describe('WrapperComponent', () => {
+  let authServiceMock: { logout: jest.Mock };
+
   beforeEach(async () => {
+    authServiceMock = { logout: jest.fn() };
+
     await TestBed.configureTestingModule({
       imports: [WrapperComponent],
       providers: [
         provideZonelessChangeDetection(),
-        { provide: AuthService, useValue: { logout: jest.fn() } }
+        { provide: AuthService, useValue: authServiceMock }
       ]
     }).compileComponents();
   });
@@ -49,5 +53,36 @@ describe('WrapperComponent', () => {
 
     document.dispatchEvent(new MouseEvent('click'));
     expect(component['notificationsOpen']()).toBe(false);
+  });
+
+  it('should toggle the profile menu dropdown', () => {
+    const fixture = TestBed.createComponent(WrapperComponent);
+    const component = fixture.componentInstance;
+    fixture.detectChanges();
+
+    expect(component['logoMenuOpen']()).toBe(false);
+
+    const button = fixture.debugElement.query(By.css('.profile-menu-trigger'));
+    button.triggerEventHandler('click', new MouseEvent('click'));
+    fixture.detectChanges();
+    expect(component['logoMenuOpen']()).toBe(true);
+
+    document.dispatchEvent(new MouseEvent('click'));
+    expect(component['logoMenuOpen']()).toBe(false);
+  });
+
+  it('should call logout from the profile menu', () => {
+    const fixture = TestBed.createComponent(WrapperComponent);
+    const component = fixture.componentInstance;
+    fixture.detectChanges();
+
+    const button = fixture.debugElement.query(By.css('.profile-menu-trigger'));
+    button.triggerEventHandler('click', new MouseEvent('click'));
+    fixture.detectChanges();
+
+    const menuItem = fixture.debugElement.query(By.css('.profile-dropdown .menu-item'));
+    menuItem.triggerEventHandler('click', new MouseEvent('click'));
+    expect(authServiceMock.logout).toHaveBeenCalled();
+    expect(component['logoMenuOpen']()).toBe(false);
   });
 });
