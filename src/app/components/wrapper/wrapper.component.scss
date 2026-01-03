@@ -147,6 +147,7 @@
     }
 
     .navbar-profile {
+      position: relative;
       display: flex;
       align-items: center;
       gap: 0.75rem;
@@ -170,6 +171,68 @@
 
       small {
         color: #6f7494;
+      }
+
+      .profile-menu-trigger {
+        border: none;
+        background: #f4f1ff;
+        color: #5a3be7;
+        width: 32px;
+        height: 32px;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: background 0.2s ease, transform 0.2s ease;
+
+        .material-symbols-outlined {
+          font-size: 1.25rem;
+        }
+
+        &:hover {
+          background: #ebe5ff;
+          transform: translateY(-1px);
+        }
+      }
+
+      .profile-dropdown {
+        position: absolute;
+        top: 120%;
+        right: 0;
+        width: 200px;
+        padding: 0.75rem;
+        border-radius: 14px;
+        background: #fff;
+        border: 1px solid rgba(90, 59, 231, 0.1);
+        box-shadow: 0 20px 50px rgba(44, 56, 120, 0.15);
+        opacity: 0;
+        pointer-events: none;
+        transform: translateY(-10px);
+        transition: opacity 0.2s ease, transform 0.2s ease;
+
+        &.open {
+          opacity: 1;
+          pointer-events: auto;
+          transform: translateY(0);
+        }
+
+        .menu-item {
+          width: 100%;
+          border: none;
+          border-radius: 8px;
+          padding: 0.55rem 0.75rem;
+          background: transparent;
+          text-align: left;
+          font-weight: 600;
+          color: #333b60;
+          cursor: pointer;
+
+          &:hover {
+            background: #f4f1ff;
+            color: #5a3be7;
+          }
+        }
       }
     }
   }

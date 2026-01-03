@@ -2,6 +2,7 @@ import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { NavigationEnd, Router } from '@angular/router';
 import { Subject } from 'rxjs';
+import { AuthService } from './services/auth/auth.service';
 import { App } from './app';
 
 describe('App', () => {
@@ -19,7 +20,8 @@ describe('App', () => {
       imports: [App],
       providers: [
         provideZonelessChangeDetection(),
-        { provide: Router, useValue: routerStub }
+        { provide: Router, useValue: routerStub },
+        { provide: AuthService, useValue: { logout: jest.fn() } }
       ]
     }).compileComponents();
   });
