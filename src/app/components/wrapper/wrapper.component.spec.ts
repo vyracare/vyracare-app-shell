@@ -2,13 +2,17 @@ import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { RouterOutlet } from '@angular/router';
+import { AuthService } from '../../services/auth/auth.service';
 import { WrapperComponent } from './wrapper.component';
 
 describe('WrapperComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [WrapperComponent],
-      providers: [provideZonelessChangeDetection()]
+      providers: [
+        provideZonelessChangeDetection(),
+        { provide: AuthService, useValue: { logout: jest.fn() } }
+      ]
     }).compileComponents();
   });
 

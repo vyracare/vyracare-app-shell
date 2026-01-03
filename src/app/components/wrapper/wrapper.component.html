@@ -2,7 +2,7 @@
   <header class="navbar">
     <div class="logo-area">
       <span class="logo-mark">Vyra<span>Care</span></span>
-      <p>Gestão integrada para clínicas e profissionais de saúde</p>
+      <p>Gestao integrada para clinicas e profissionais de saude</p>
     </div>
 
     <div class="navbar-search">
@@ -41,6 +41,12 @@
       <div>
         <strong>Vyracare Brasil</strong>
         <small>Administrador</small>
+      </div>
+      <button type="button" class="profile-menu-trigger" (click)="toggleLogoMenu($event)" aria-label="Abrir menu do sistema">
+        <span class="material-symbols-outlined">expand_more</span>
+      </button>
+      <div class="profile-dropdown" [class.open]="logoMenuOpen()" (click)="$event.stopPropagation()">
+        <button type="button" class="menu-item" (click)="logout()">Sair</button>
       </div>
     </div>
   </header>
