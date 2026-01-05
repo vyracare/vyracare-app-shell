@@ -21,7 +21,14 @@ describe('App', () => {
       providers: [
         provideZonelessChangeDetection(),
         { provide: Router, useValue: routerStub },
-        { provide: AuthService, useValue: { logout: jest.fn() } }
+        {
+          provide: AuthService,
+          useValue: {
+            logout: jest.fn(),
+            getUserDisplayName: jest.fn().mockReturnValue('Test User'),
+            getUserInitials: jest.fn().mockReturnValue('TU')
+          }
+        }
       ]
     }).compileComponents();
   });

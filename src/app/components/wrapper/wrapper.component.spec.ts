@@ -6,10 +6,18 @@ import { AuthService } from '../../services/auth/auth.service';
 import { WrapperComponent } from './wrapper.component';
 
 describe('WrapperComponent', () => {
-  let authServiceMock: { logout: jest.Mock };
+  let authServiceMock: {
+    logout: jest.Mock;
+    getUserDisplayName: jest.Mock;
+    getUserInitials: jest.Mock;
+  };
 
   beforeEach(async () => {
-    authServiceMock = { logout: jest.fn() };
+    authServiceMock = {
+      logout: jest.fn(),
+      getUserDisplayName: jest.fn().mockReturnValue('Test User'),
+      getUserInitials: jest.fn().mockReturnValue('TU')
+    };
 
     await TestBed.configureTestingModule({
       imports: [WrapperComponent],
@@ -28,6 +36,15 @@ describe('WrapperComponent', () => {
     expect(compiled.querySelector('.navbar')).not.toBeNull();
     expect(compiled.querySelector('.sidebar')).not.toBeNull();
     expect(compiled.querySelector('.shell-main')).not.toBeNull();
+  });
+
+  it('should render the user name and initials from the auth service', () => {
+    const fixture = TestBed.createComponent(WrapperComponent);
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.avatar')?.textContent).toContain('TU');
+    expect(compiled.querySelector('.navbar-profile strong')?.textContent).toContain('Test User');
   });
 
   it('should host a router outlet inside main area', () => {
