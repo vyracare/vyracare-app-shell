@@ -53,7 +53,7 @@ describe('RegisterComponent', () => {
   it('should call authService.register and navigate to login on submit', () => {
     const fixture = TestBed.createComponent(RegisterComponent);
     const component = fixture.componentInstance;
-    const dto = { email: 'user@example.com', password: 'P@ssw0rd' };
+    const dto = { fullName: 'User Name', email: 'user@example.com', password: 'P@ssw0rd' };
 
     authService.register.mockReturnValue(of({}));
 
@@ -69,7 +69,7 @@ describe('RegisterComponent', () => {
   it('should handle register errors', () => {
     const fixture = TestBed.createComponent(RegisterComponent);
     const component = fixture.componentInstance;
-    const dto = { email: 'user@example.com', password: 'P@ssw0rd' };
+    const dto = { fullName: 'User Name', email: 'user@example.com', password: 'P@ssw0rd' };
     const backendError = { error: 'Falha' };
 
     authService.register.mockReturnValue(throwError(() => backendError));
