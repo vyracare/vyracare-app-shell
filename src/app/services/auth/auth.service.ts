@@ -57,7 +57,7 @@ export class AuthService {
 
   getUserDisplayName(): string {
     const payload = this.getJwtPayload();
-    const rawName = (payload?.['fullName'] as string | undefined);
+    const rawName = (payload?.['name'] as string | undefined);
 
     if (typeof rawName === 'string' && rawName.trim()) {
       return rawName.trim();
