@@ -9,6 +9,23 @@
 
         <form class="login-form" [formGroup]="form" (ngSubmit)="onSubmit()">
           <div class="form-group">
+            <label for="register-full-name">Nome completo</label>
+            <input
+              id="register-full-name"
+              type="text"
+              class="form-control"
+              formControlName="fullName"
+              placeholder="Digite seu nome"
+              [class.invalid]="form.controls['fullName'].invalid && (form.controls['fullName'].dirty || form.controls['fullName'].touched)"
+            />
+            @if (form.controls['fullName'].invalid && (form.controls['fullName'].dirty || form.controls['fullName'].touched)) {
+              <small class="field-error">
+                Nome e obrigatorio
+              </small>
+            }
+          </div>
+
+          <div class="form-group">
             <label for="register-email">E-mail</label>
             <input
               id="register-email"

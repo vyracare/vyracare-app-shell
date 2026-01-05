@@ -14,8 +14,13 @@ import { AuthService } from '../../services/auth/auth.service';
 export class WrapperComponent {
   protected readonly notificationsOpen = signal(false);
   protected readonly logoMenuOpen = signal(false);
+  protected readonly userDisplayName: string;
+  protected readonly userInitials: string;
 
-  constructor(private readonly authService: AuthService) {}
+  constructor(private readonly authService: AuthService) {
+    this.userDisplayName = this.authService.getUserDisplayName();
+    this.userInitials = this.authService.getUserInitials();
+  }
 
   toggleNotifications(event: Event) {
     event.stopPropagation();

@@ -25,6 +25,7 @@ export class RegisterComponent {
     private router: Router
   ) {
     this.form = this.fb.group({
+      fullName: ['', [Validators.required]],
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(6)]]
     });
@@ -36,9 +37,9 @@ export class RegisterComponent {
     this.loading = true;
     this.error = null;
 
-    const { email, password } = this.form.value;
+    const { fullName, email, password } = this.form.value;
 
-    this.authService.register({ email, password }).subscribe({
+    this.authService.register({ fullName, email, password }).subscribe({
       next: () => {
         this.loading = false;
         this.goToLogin();

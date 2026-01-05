@@ -37,9 +37,9 @@
     </div>
 
     <div class="navbar-profile">
-      <div class="avatar">VB</div>
+      <div class="avatar">{{ userInitials }}</div>
       <div>
-        <strong>Vyracare Brasil</strong>
+        <strong>{{ userDisplayName }}</strong>
         <small>Administrador</small>
       </div>
       <button type="button" class="profile-menu-trigger" (click)="toggleLogoMenu($event)" aria-label="Abrir menu do sistema">
