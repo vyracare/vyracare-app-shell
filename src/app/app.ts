@@ -13,7 +13,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class App {
-  private readonly authRoutes = ['/login', '/register'];
+  private readonly authRoutes = ['/login', '/register', '/first-access', '/forgot-password'];
   private readonly shellVisible = signal(true);
   protected readonly showShell = computed(() => this.shellVisible());
 
