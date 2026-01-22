@@ -21,6 +21,18 @@ export class AuthService {
     return this.http.post(`${this.apiUrl}/register`, data);
   }
 
+  checkFirstAccess(email: string): Observable<{ exists: boolean; canSetPassword: boolean }> {
+    return this.http.post<{ exists: boolean; canSetPassword: boolean }>(`${this.apiUrl}/first-access/check`, { email });
+  }
+
+  setFirstAccessPassword(email: string, password: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/first-access/set-password`, { email, password });
+  }
+
+  forgotPassword(email: string, password: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/forgot-password`, { email, password });
+  }
+
   logout(): void {
     localStorage.removeItem(this.tokenKey);
     this.router.navigate(['/login']);
