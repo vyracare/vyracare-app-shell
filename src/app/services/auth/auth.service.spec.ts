@@ -62,6 +62,39 @@ describe('AuthService', () => {
     req.flush({ token: 'any' });
   });
 
+  it('should perform first access check request', () => {
+    const email = 'user@example.com';
+
+    service.checkFirstAccess(email).subscribe();
+
+    const req = httpMock.expectOne(`${environment.apiUrl}/first-access/check`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ email });
+    req.flush({ exists: true, canSetPassword: true });
+  });
+
+  it('should perform first access set password request', () => {
+    const payload = { email: 'user@example.com', password: 'secret' };
+
+    service.setFirstAccessPassword(payload.email, payload.password).subscribe();
+
+    const req = httpMock.expectOne(`${environment.apiUrl}/first-access/set-password`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual(payload);
+    req.flush({ ok: true });
+  });
+
+  it('should perform forgot password request', () => {
+    const payload = { email: 'user@example.com', password: 'secret' };
+
+    service.forgotPassword(payload.email, payload.password).subscribe();
+
+    const req = httpMock.expectOne(`${environment.apiUrl}/forgot-password`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual(payload);
+    req.flush({ ok: true });
+  });
+
   it('should save and retrieve token', () => {
     service.saveToken('abc');
     expect(service.getToken()).toBe('abc');
