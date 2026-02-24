@@ -35,12 +35,27 @@ export const routes: Routes = [
     loadChildren: () =>
       loadRemoteModule({
         type: 'module',
-        remoteEntry: environment.userRemoteEntry,
+        remoteEntry: environment.profileRemoteEntry,
         exposedModule: './Routes'
       })
         .then((m) => m.ROUTES ?? m.routes ?? [])
         .catch((err) => {
           console.error('Nao foi possivel carregar o cadastro de funcionarios', err);
+          return [ { path: '', component: ErrorComponent } ];
+        })
+  },
+  {
+    path: 'cadastro/pacientes',
+    canActivate: [AuthGuard],
+    loadChildren: () =>
+      loadRemoteModule({
+        type: 'module',
+        remoteEntry: environment.userRemoteEntry,
+        exposedModule: './Routes'
+      })
+        .then((m) => m.ROUTES ?? m.routes ?? [])
+        .catch((err) => {
+          console.error('Nao foi possivel carregar o cadastro de pacientes', err);
           return [ { path: '', component: ErrorComponent } ];
         })
   }
