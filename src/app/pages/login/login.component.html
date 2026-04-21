@@ -9,50 +9,49 @@
 
         <form class="login-form" [formGroup]="form" (ngSubmit)="onSubmit()">
           <div class="form-group">
-            <label for="email">E-mail</label>
-            <input
+            <vc-input
               id="email"
+              label="E-mail"
               type="email"
-              class="form-control"
+              mask="email"
               formControlName="email"
               placeholder="Digite seu e-mail"
-              [class.invalid]="form.controls['email'].invalid && (form.controls['email'].dirty || form.controls['email'].touched)"
-            />
-            @if (form.controls['email'].invalid && (form.controls['email'].dirty || form.controls['email'].touched)) {
-              <small class="field-error">
-                @if (form.controls['email'].hasError('required')) {
-                  E-mail é obrigatório
-                } @else {
-                  E-mail inválido
-                }
-              </small>
-            }
+              [error]="
+                form.controls['email'].invalid && (form.controls['email'].dirty || form.controls['email'].touched)
+                  ? (form.controls['email'].hasError('required') ? 'E-mail e obrigatorio' : 'E-mail invalido')
+                  : ''
+              "
+            ></vc-input>
           </div>
 
           <div class="form-group">
-            <label for="password">Senha</label>
-            <input
+            <vc-input
               id="password"
+              label="Senha"
               type="password"
-              class="form-control"
+              mask="password"
               formControlName="password"
               placeholder="Digite sua senha"
-              [class.invalid]="form.controls['password'].invalid && (form.controls['password'].dirty || form.controls['password'].touched)"
-            />
-            @if (form.controls['password'].invalid && (form.controls['password'].dirty || form.controls['password'].touched)) {
-              <small class="field-error">
-                Senha é obrigatória
-              </small>
-            }
+              [error]="
+                form.controls['password'].invalid && (form.controls['password'].dirty || form.controls['password'].touched)
+                  ? 'Senha e obrigatoria'
+                  : ''
+              "
+            ></vc-input>
           </div>
 
           <div class="form-helper">
             <span>Esqueceu a senha? <a routerLink="/forgot-password">Redefinir senha</a></span>
           </div>
 
-          <button class="au-btn au-btn--block btn-primary m-b-20" type="submit" [disabled]="loading || form.invalid">
+          <vc-button
+            type="submit"
+            full
+            [loading]="loading"
+            [disabled]="loading || form.invalid"
+          >
             {{ loading ? 'Entrando...' : 'Entrar' }}
-          </button>
+          </vc-button>
         </form>
 
         @if (error) {
@@ -64,16 +63,16 @@
         <div class="register-link">
           <div class="register-actions">
             <div class="register-action">
-              <p>Ainda não tem uma conta?</p>
-              <button type="button" class="ghost-button" (click)="goToRegister()">
+              <p>Ainda nao tem uma conta?</p>
+              <vc-button type="button" variant="ghost" full (click)="goToRegister()">
                 Crie uma agora!
-              </button>
+              </vc-button>
             </div>
             <div class="register-action">
               <p>Primeiro acesso?</p>
-              <button type="button" class="ghost-button" (click)="goToFirstAccess()">
+              <vc-button type="button" variant="ghost" full (click)="goToFirstAccess()">
                 Definir senha
-              </button>
+              </vc-button>
             </div>
           </div>
         </div>
