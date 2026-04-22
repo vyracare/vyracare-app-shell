@@ -2,12 +2,13 @@ import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
+import { VcButtonComponent, VcInputComponent } from '@vyracare/design-system';
 import { AuthService } from '../../services/auth/auth.service';
 
 @Component({
   selector: 'vyracare-first-access',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, VcButtonComponent, VcInputComponent],
   templateUrl: './first-access.component.html',
   styleUrls: ['./first-access.component.scss']
 })

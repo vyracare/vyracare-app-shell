@@ -27,7 +27,12 @@
 							}
 						],
 						"styles": [
+							"node_modules/@vyracare/design-system/styles/_index.scss",
+							"node_modules/bootstrap-icons/font/bootstrap-icons.css",
 							"src/styles.scss"
+						],
+						"allowedCommonJsDependencies": [
+							"@angular-architects/module-federation"
 						],
           "main": "src/main.ts",
           "outputPath": "dist/vyracare-app-shell",

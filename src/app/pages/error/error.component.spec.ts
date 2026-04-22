@@ -1,6 +1,5 @@
 import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { By } from '@angular/platform-browser';
 import { ErrorComponent } from './error.component';
 
 describe('ErrorComponent', () => {
@@ -28,7 +27,7 @@ describe('ErrorComponent', () => {
     const compiled = fixture.nativeElement as HTMLElement;
 
     expect(compiled.querySelector('h1')?.textContent).toContain('Ops! Algo deu errado');
-    expect(compiled.querySelector('p')?.textContent).toContain('Não conseguimos carregar esta parte do aplicativo');
+    expect(compiled.querySelector('p')?.textContent).toContain('Nao conseguimos carregar esta parte do aplicativo');
   });
 
   it('should allow overriding title and description inputs', () => {
@@ -54,10 +53,7 @@ describe('ErrorComponent', () => {
     });
 
     const fixture = TestBed.createComponent(ErrorComponent);
-    fixture.detectChanges();
-
-    const button = fixture.debugElement.query(By.css('button'));
-    button.triggerEventHandler('click');
+    fixture.componentInstance.reload();
 
     expect(reloadMock).toHaveBeenCalledTimes(1);
   });

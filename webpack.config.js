@@ -11,7 +11,18 @@ const shared = {
 };
 
 module.exports = {
-  output: { uniqueName: "vyracare-app-shell", publicPath: "auto" },
+  output: {
+    uniqueName: "vyracare-app-shell",
+    publicPath: "auto",
+    module: false,
+    environment: {
+      module: false,
+      dynamicImport: false
+    }
+  },
+  experiments: {
+    outputModule: false
+  },
   optimization: { runtimeChunk: false },
   plugins: [
     new ModuleFederationPlugin({

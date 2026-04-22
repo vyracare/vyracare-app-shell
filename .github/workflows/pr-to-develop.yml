@@ -9,9 +9,73 @@ on:
 
 jobs:
   ci-angular:
-    uses: vyracare/vyracare-infra-pipes-angular/.github/workflows/ci-angular.yml@main
-    with:
-      branch-name: ${{ github.ref_name }}
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: us-east-1
+      CODEARTIFACT_DOMAIN: vyracare-design-system
+      CODEARTIFACT_REPO: vyracare-design-system
+      CODEARTIFACT_DOMAIN_OWNER: '510253726006'
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Configure npm registries
+        run: |
+          set -euo pipefail
+          CODEARTIFACT_ENDPOINT="$(aws codeartifact get-repository-endpoint \
+            --domain "$CODEARTIFACT_DOMAIN" \
+            --domain-owner "$CODEARTIFACT_DOMAIN_OWNER" \
+            --repository "$CODEARTIFACT_REPO" \
+            --format npm \
+            --region "$AWS_REGION" \
+            --query repositoryEndpoint \
+            --output text)"
+          CODEARTIFACT_AUTH_TOKEN="$(aws codeartifact get-authorization-token \
+            --domain "$CODEARTIFACT_DOMAIN" \
+            --domain-owner "$CODEARTIFACT_DOMAIN_OWNER" \
+            --region "$AWS_REGION" \
+            --query authorizationToken \
+            --output text)"
+          CODEARTIFACT_REGISTRY="${CODEARTIFACT_ENDPOINT%/}/"
+          CODEARTIFACT_HOST="${CODEARTIFACT_REGISTRY#https://}"
+
+          {
+            echo "registry=https://registry.npmjs.org/"
+            echo "@vyracare:registry=$CODEARTIFACT_REGISTRY"
+            echo "//$CODEARTIFACT_HOST:_authToken=$CODEARTIFACT_AUTH_TOKEN"
+          } > .npmrc
+
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps --package-lock=false
+
+      - name: Validate design system package
+        run: |
+          set -euo pipefail
+          npm ls @vyracare/design-system
+          test -f node_modules/@vyracare/design-system/package.json
+          test -f node_modules/@vyracare/design-system/index.d.ts
+          test -f node_modules/@vyracare/design-system/fesm2022/vyracare-design-system.mjs
+          test -f node_modules/@vyracare/design-system/styles/_index.scss
+
+      - name: Build Angular app
+        run: npm run build -- --configuration production
+
+      - name: Run unit tests
+        run: npm run test
 
   open-pr-develop:
     runs-on: ubuntu-latest
