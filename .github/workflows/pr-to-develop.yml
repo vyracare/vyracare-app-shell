@@ -9,16 +9,48 @@ on:
 
 jobs:
   ci-angular:
-    uses: vyracare/vyracare-infra-pipes-angular/.github/workflows/ci-angular.yml@main
-    with:
-      branch-name: ${{ github.ref_name }}
-      codeartifact-domain: vyracare-design-system
-      codeartifact-repo: vyracare-design-system
-      codeartifact-domain-owner: '510253726006'
-      aws-region: us-east-1
-    secrets:
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: us-east-1
+      CODEARTIFACT_DOMAIN: vyracare-design-system
+      CODEARTIFACT_REPO: vyracare-design-system
+      CODEARTIFACT_DOMAIN_OWNER: '510253726006'
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to CodeArtifact
+        run: |
+          set -euo pipefail
+          aws codeartifact login \
+            --tool npm \
+            --domain "$CODEARTIFACT_DOMAIN" \
+            --domain-owner "$CODEARTIFACT_DOMAIN_OWNER" \
+            --repository "$CODEARTIFACT_REPO" \
+            --region "$AWS_REGION"
+
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Build Angular app
+        run: npm run build -- --configuration production
+
+      - name: Run unit tests
+        run: npm run test
 
   open-pr-develop:
     runs-on: ubuntu-latest
