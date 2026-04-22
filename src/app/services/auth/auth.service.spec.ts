@@ -16,6 +16,13 @@ function createTokenWithOffset(offsetMs: number): string {
   return `${header}.${payload}.signature`;
 }
 
+function createTokenWithPayload(payload: Record<string, unknown>): string {
+  const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
+  const body = Buffer.from(JSON.stringify(payload)).toString('base64url');
+
+  return `${header}.${body}.signature`;
+}
+
 describe('AuthService', () => {
   let service: AuthService;
   let httpMock: HttpTestingController;
@@ -135,6 +142,38 @@ describe('AuthService', () => {
     expect(navigateMock).toHaveBeenCalledWith(['/login']);
   });
 
+  it('should logout and return false when token payload parsing throws', () => {
+    service.saveToken('header.invalid-json.signature');
+
+    expect(service.isAuthenticated()).toBe(false);
+    expect(service.getToken()).toBeNull();
+    expect(navigateMock).toHaveBeenCalledWith(['/login']);
+  });
+
+  it('should logout and return false when jwt payload reader throws unexpectedly', () => {
+    service.saveToken(createTokenWithPayload({ exp: Math.floor((Date.now() + 60_000) / 1000) }));
+    jest
+      .spyOn(
+        service as unknown as { readJwtPayload(token: string): Record<string, unknown> | null },
+        'readJwtPayload'
+      )
+      .mockImplementation(() => {
+        throw new Error('unexpected');
+      });
+
+    expect(service.isAuthenticated()).toBe(false);
+    expect(service.getToken()).toBeNull();
+    expect(navigateMock).toHaveBeenCalledWith(['/login']);
+  });
+
+  it('should logout and return false when token has no finite expiration', () => {
+    service.saveToken(createTokenWithPayload({ email: 'user@example.com' }));
+
+    expect(service.isAuthenticated()).toBe(false);
+    expect(service.getToken()).toBeNull();
+    expect(navigateMock).toHaveBeenCalledWith(['/login']);
+  });
+
   it('should reflect login state based on token presence', () => {
     expect(service.isLoggedIn()).toBe(false);
 
@@ -143,5 +182,57 @@ describe('AuthService', () => {
 
     service.logout();
     expect(service.isLoggedIn()).toBe(false);
+  });
+
+  it('should resolve display name from jwt name claim', () => {
+    service.saveToken(createTokenWithPayload({ name: '  Maria Silva  ' }));
+
+    expect(service.getUserDisplayName()).toBe('Maria Silva');
+    expect(service.getUserInitials()).toBe('MS');
+  });
+
+  it('should resolve display name and initials from jwt email claim', () => {
+    service.saveToken(createTokenWithPayload({ email: ' ana.paula@example.com ' }));
+
+    expect(service.getUserDisplayName()).toBe('ana.paula@example.com');
+    expect(service.getUserInitials()).toBe('AP');
+  });
+
+  it('should resolve display name from email when name claim is blank', () => {
+    service.saveToken(createTokenWithPayload({ name: '   ', email: 'user@example.com' }));
+
+    expect(service.getUserDisplayName()).toBe('user@example.com');
+  });
+
+  it('should fallback to default display name when email claim is blank', () => {
+    service.saveToken(createTokenWithPayload({ email: '   ' }));
+
+    expect(service.getUserDisplayName()).toBe('Usuario');
+  });
+
+  it('should fallback to default display name when token payload is missing user data', () => {
+    service.saveToken(createTokenWithPayload({ role: 'admin' }));
+
+    expect(service.getUserDisplayName()).toBe('Usuario');
+    expect(service.getUserInitials()).toBe('US');
+  });
+
+  it('should fallback to default display data when token is missing or invalid', () => {
+    expect(service.getUserDisplayName()).toBe('Usuario');
+    expect(service.getUserInitials()).toBe('US');
+
+    service.saveToken('invalid');
+    expect(service.getUserDisplayName()).toBe('Usuario');
+  });
+
+  it('should build initials for empty and single-part values', () => {
+    const buildInitials = (
+      service as unknown as { buildInitials(value: string): string }
+    ).buildInitials.bind(service);
+
+    expect(buildInitials('')).toBe('U');
+    expect(buildInitials('@example.com')).toBe('U');
+    expect(buildInitials('li')).toBe('LI');
+    expect(buildInitials('ana-maria')).toBe('AM');
   });
 });

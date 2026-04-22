@@ -9,61 +9,61 @@
 
         <form class="login-form" [formGroup]="emailForm" (ngSubmit)="checkEmail()">
           <div class="form-group">
-            <label for="first-access-email">E-mail</label>
-            <input
+            <vc-input
               id="first-access-email"
+              label="E-mail"
               type="email"
-              class="form-control"
+              mask="email"
               formControlName="email"
               placeholder="Digite seu e-mail"
-              [class.invalid]="emailForm.controls['email'].invalid && (emailForm.controls['email'].dirty || emailForm.controls['email'].touched)"
-            />
-            @if (emailForm.controls['email'].invalid && (emailForm.controls['email'].dirty || emailForm.controls['email'].touched)) {
-              <small class="field-error">
-                @if (emailForm.controls['email'].hasError('required')) {
-                  E-mail e obrigatorio
-                } @else {
-                  E-mail invalido
-                }
-              </small>
-            }
+              [error]="
+                emailForm.controls['email'].invalid && (emailForm.controls['email'].dirty || emailForm.controls['email'].touched)
+                  ? (emailForm.controls['email'].hasError('required') ? 'E-mail e obrigatorio' : 'E-mail invalido')
+                  : ''
+              "
+            ></vc-input>
           </div>
 
           @if (!canSetPassword()) {
-            <button class="au-btn au-btn--block btn-primary m-b-20" type="submit" [disabled]="loading() || emailForm.invalid">
+            <vc-button
+              type="submit"
+              full
+              [loading]="loading()"
+              [disabled]="loading() || emailForm.invalid"
+            >
               {{ loading() ? 'Verificando...' : 'Verificar e-mail' }}
-            </button>
+            </vc-button>
           }
         </form>
 
         @if (canSetPassword()) {
           <form class="login-form" [formGroup]="passwordForm" (ngSubmit)="setPassword()">
             <div class="form-group">
-              <label for="first-access-password">Nova senha</label>
-              <input
+              <vc-input
                 id="first-access-password"
+                label="Nova senha"
                 type="password"
-                class="form-control"
+                mask="password"
                 formControlName="password"
                 placeholder="Crie sua senha"
-                [class.invalid]="passwordForm.controls['password'].invalid && (passwordForm.controls['password'].dirty || passwordForm.controls['password'].touched)"
-              />
-              @if (passwordForm.controls['password'].invalid && (passwordForm.controls['password'].dirty || passwordForm.controls['password'].touched)) {
-                <small class="field-error">
-                  @if (passwordForm.controls['password'].hasError('required')) {
-                    Senha e obrigatoria
-                  } @else {
-                    A senha precisa ter no minimo 6 caracteres
-                  }
-                </small>
-              }
+                [error]="
+                  passwordForm.controls['password'].invalid && (passwordForm.controls['password'].dirty || passwordForm.controls['password'].touched)
+                    ? (passwordForm.controls['password'].hasError('required') ? 'Senha e obrigatoria' : 'A senha precisa ter no minimo 6 caracteres')
+                    : ''
+                "
+              ></vc-input>
             </div>
 
             <p class="info-text">A senha precisa ter pelo menos 6 caracteres.</p>
 
-            <button class="au-btn au-btn--block btn-primary m-b-20" type="submit" [disabled]="loading() || passwordForm.invalid">
+            <vc-button
+              type="submit"
+              full
+              [loading]="loading()"
+              [disabled]="loading() || passwordForm.invalid"
+            >
               {{ loading() ? 'Salvando...' : 'Definir senha' }}
-            </button>
+            </vc-button>
           </form>
         }
 
@@ -81,9 +81,9 @@
 
         <div class="register-link">
           <p>Ja possui senha?</p>
-          <button type="button" class="ghost-button" (click)="goToLogin()">
+          <vc-button type="button" variant="ghost" full (click)="goToLogin()">
             Acessar login
-          </button>
+          </vc-button>
         </div>
       </div>
     </div>

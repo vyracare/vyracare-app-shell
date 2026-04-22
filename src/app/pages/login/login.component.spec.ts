@@ -85,6 +85,35 @@ describe('LoginComponent', () => {
     expect(navigateSpy).not.toHaveBeenCalled();
     expect(component.error).toContain('Tente novamente');
   });
+
+  it('should accept accessToken response field on submit', () => {
+    const fixture = TestBed.createComponent(LoginComponent);
+    const component = fixture.componentInstance;
+    const credentials = { email: 'user@example.com', password: 'P@ssw0rd' };
+
+    authService.login.mockReturnValue(of({ accessToken: 'access-token' }));
+
+    component.form.setValue(credentials);
+    component.onSubmit();
+
+    expect(authService.saveToken).toHaveBeenCalledWith('access-token');
+    expect(navigateSpy).toHaveBeenCalledWith(['/dashboard']);
+  });
+
+  it('should accept access_token response field on submit', () => {
+    const fixture = TestBed.createComponent(LoginComponent);
+    const component = fixture.componentInstance;
+    const credentials = { email: 'user@example.com', password: 'P@ssw0rd' };
+
+    authService.login.mockReturnValue(of({ access_token: 'snake-token' }));
+
+    component.form.setValue(credentials);
+    component.onSubmit();
+
+    expect(authService.saveToken).toHaveBeenCalledWith('snake-token');
+    expect(navigateSpy).toHaveBeenCalledWith(['/dashboard']);
+  });
+
   it('should handle login errors', () => {
     const fixture = TestBed.createComponent(LoginComponent);
     const component = fixture.componentInstance;
@@ -100,6 +129,19 @@ describe('LoginComponent', () => {
     expect(navigateSpy).not.toHaveBeenCalled();
     expect(component.loading).toBe(false);
     expect(component.error).toBe(backendError.error);
+  });
+
+  it('should use fallback message when login error has no backend message', () => {
+    const fixture = TestBed.createComponent(LoginComponent);
+    const component = fixture.componentInstance;
+    const credentials = { email: 'user@example.com', password: 'P@ssw0rd' };
+
+    authService.login.mockReturnValue(throwError(() => ({})));
+
+    component.form.setValue(credentials);
+    component.onSubmit();
+
+    expect(component.error).toContain('Falha no login');
   });
 
   it('should navigate to register page', () => {

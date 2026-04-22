@@ -82,4 +82,17 @@ describe('RegisterComponent', () => {
     expect(component.loading).toBe(false);
     expect(component.error).toBe(backendError.error);
   });
+
+  it('should use fallback message when register error has no backend message', () => {
+    const fixture = TestBed.createComponent(RegisterComponent);
+    const component = fixture.componentInstance;
+    const dto = { fullName: 'User Name', email: 'user@example.com', password: 'P@ssw0rd' };
+
+    authService.register.mockReturnValue(throwError(() => ({})));
+
+    component.form.setValue(dto);
+    component.onSubmit();
+
+    expect(component.error).toContain('Falha no registro');
+  });
 });

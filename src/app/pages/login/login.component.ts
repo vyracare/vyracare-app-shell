@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { VcButtonComponent, VcInputComponent } from '@vyracare/design-system';
 import { AuthService } from '../../services/auth/auth.service';
 
 @Component({
@@ -10,7 +11,9 @@ import { AuthService } from '../../services/auth/auth.service';
   imports: [
     CommonModule,
     ReactiveFormsModule,
-    RouterLink
+    RouterLink,
+    VcButtonComponent,
+    VcInputComponent
   ],
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss']
