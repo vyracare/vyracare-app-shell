@@ -60,7 +60,10 @@ jobs:
           } > .npmrc
 
       - name: Install dependencies
-        run: npm install --legacy-peer-deps
+        run: npm install --legacy-peer-deps --package-lock=false
+
+      - name: Validate design system package
+        run: npm ls @vyracare/design-system
 
       - name: Build Angular app
         run: npm run build -- --configuration production
