@@ -1,78 +1,30 @@
 <div class="shell-layout">
-  <header class="navbar">
-    <div class="logo-area">
-      <span class="logo-mark">Vyra<span>Care</span></span>
-      <p>Gestao integrada para clinicas e profissionais de saude</p>
-    </div>
-
-    <div class="navbar-search">
-      <label class="search-field">
-        <span class="material-symbols-outlined">search</span>
-        <input type="search" placeholder="Busque por pacientes, procedimentos ou arquivos" />
-      </label>
-    </div>
-
-    <div class="notifications" (click)="toggleNotifications($event)">
-      <span class="material-symbols-outlined bell">notifications</span>
-      <span class="badge">3</span>
-
-      <div class="notif-dropdown" [class.open]="notificationsOpen()" (click)="$event.stopPropagation()">
-        <h4>Notificações recentes</h4>
-        <ul>
-          <li>
-            <strong>Agenda de hoje</strong>
-            <p>Você possui 8 atendimentos confirmados.</p>
-          </li>
-          <li>
-            <strong>Financeiro</strong>
-            <p>3 boletos aguardando confirmação.</p>
-          </li>
-          <li>
-            <strong>Suporte</strong>
-            <p>Novo chamado respondido por nossa equipe.</p>
-          </li>
-        </ul>
-        <button type="button" class="view-all">Ver todas</button>
-      </div>
-    </div>
-
-    <div class="navbar-profile">
-      <div class="avatar">{{ userInitials }}</div>
-      <div>
-        <strong>{{ userDisplayName }}</strong>
-        <small>Administrador</small>
-      </div>
-      <button type="button" class="profile-menu-trigger" (click)="toggleLogoMenu($event)" aria-label="Abrir menu do sistema">
-        <span class="material-symbols-outlined">expand_more</span>
-      </button>
-      <div class="profile-dropdown" [class.open]="logoMenuOpen()" (click)="$event.stopPropagation()">
-        <button type="button" class="menu-item" (click)="logout()">Sair</button>
-      </div>
-    </div>
-  </header>
+  <vc-navbar
+    brandLabel="Vyra"
+    brandAccent="Care"
+    brandSubtitle="Gestao integrada para clinicas e profissionais de saude"
+    [logoClickable]="true"
+    [searchValue]="searchValue()"
+    [notifications]="notifications"
+    [profileName]="userDisplayName"
+    profileRole="Administrador"
+    [profileInitials]="userInitials"
+    [profileActions]="profileActions"
+    (searchChange)="handleSearchChange($event)"
+    (searchSubmitted)="handleSearchSubmit($event)"
+    (logoClicked)="navigateToRoot()"
+    (profileActionSelected)="handleProfileAction($event)"
+  ></vc-navbar>
 
   <div class="shell-body">
-    <aside class="sidebar">
-      <div class="sidebar-group">
-        <p class="sidebar-label">Área Clínica</p>
-        <button type="button" class="active">Dashboard</button>
-        <button type="button">Agenda</button>
-        <button type="button">Pacientes</button>
-      </div>
-
-      <div class="sidebar-group">
-        <p class="sidebar-label">Operacional</p>
-        <button type="button">Financeiro</button>
-        <button type="button">Relatórios</button>
-        <button type="button">Configurações</button>
-      </div>
-
-      <div class="support-card">
-        <strong>Precisa de ajuda?</strong>
-        <p>Nossa equipe está pronta para apoiar sua operação.</p>
-        <a href="mailto:suporte@vyracare.com">suporte@vyracare.com</a>
-      </div>
-    </aside>
+    <div class="shell-sidebar">
+      <vc-sidebar
+        [groups]="sidebarGroups"
+        [activeItemId]="activeSidebarItemId"
+        [support]="sidebarSupport"
+        (itemSelected)="selectSidebarItem($event)"
+      ></vc-sidebar>
+    </div>
 
     <main class="shell-main">
       <router-outlet></router-outlet>

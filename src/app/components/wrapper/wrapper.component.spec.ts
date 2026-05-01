@@ -1,8 +1,10 @@
 import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
-import { RouterOutlet } from '@angular/router';
+import { provideRouter, Router, RouterOutlet } from '@angular/router';
+
 import { AuthService } from '../../services/auth/auth.service';
+import { routes } from '../../app.routes';
 import { WrapperComponent } from './wrapper.component';
 
 describe('WrapperComponent', () => {
@@ -11,6 +13,7 @@ describe('WrapperComponent', () => {
     getUserDisplayName: jest.Mock;
     getUserInitials: jest.Mock;
   };
+  let router: Router;
 
   beforeEach(async () => {
     authServiceMock = {
@@ -23,31 +26,34 @@ describe('WrapperComponent', () => {
       imports: [WrapperComponent],
       providers: [
         provideZonelessChangeDetection(),
+        provideRouter(routes),
         { provide: AuthService, useValue: authServiceMock }
       ]
     }).compileComponents();
+
+    router = TestBed.inject(Router);
   });
 
-  it('should render the layout shell', () => {
+  it('should render the shell with navbar, sidebar and outlet', () => {
     const fixture = TestBed.createComponent(WrapperComponent);
     fixture.detectChanges();
 
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('.navbar')).not.toBeNull();
-    expect(compiled.querySelector('.sidebar')).not.toBeNull();
+    expect(compiled.querySelector('vc-navbar')).not.toBeNull();
+    expect(compiled.querySelector('vc-sidebar')).not.toBeNull();
     expect(compiled.querySelector('.shell-main')).not.toBeNull();
   });
 
-  it('should render the user name and initials from the auth service', () => {
+  it('should expose the user data from the auth service', () => {
     const fixture = TestBed.createComponent(WrapperComponent);
     fixture.detectChanges();
+    const component = fixture.componentInstance;
 
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('.avatar')?.textContent).toContain('TU');
-    expect(compiled.querySelector('.navbar-profile strong')?.textContent).toContain('Test User');
+    expect(component['userDisplayName']).toBe('Test User');
+    expect(component['userInitials']).toBe('TU');
   });
 
-  it('should host a router outlet inside main area', () => {
+  it('should host a router outlet inside the main area', () => {
     const fixture = TestBed.createComponent(WrapperComponent);
     fixture.detectChanges();
 
@@ -55,51 +61,37 @@ describe('WrapperComponent', () => {
     expect(outlet).not.toBeNull();
   });
 
-  it('should toggle the notifications dropdown', () => {
+  it('should build sidebar groups from available routes', () => {
     const fixture = TestBed.createComponent(WrapperComponent);
+    fixture.detectChanges();
     const component = fixture.componentInstance;
-    fixture.detectChanges();
+    const groups = component['sidebarGroups'] as Array<{ items: Array<{ id: string }> }>;
 
-    expect(component['notificationsOpen']()).toBe(false);
-
-    const button = fixture.debugElement.query(By.css('.notifications'));
-    const event = new MouseEvent('click');
-    button.triggerEventHandler('click', event);
-    fixture.detectChanges();
-    expect(component['notificationsOpen']()).toBe(true);
-
-    document.dispatchEvent(new MouseEvent('click'));
-    expect(component['notificationsOpen']()).toBe(false);
+    expect(groups.length).toBe(2);
+    expect(groups[0].items.map((item) => item.id)).toEqual(['dashboard', 'cadastro/pacientes']);
+    expect(groups[1].items.map((item) => item.id)).toEqual(['cadastro/funcionarios']);
   });
 
-  it('should toggle the profile menu dropdown', () => {
+  it('should navigate to root and selected sidebar routes', async () => {
     const fixture = TestBed.createComponent(WrapperComponent);
+    fixture.detectChanges();
     const component = fixture.componentInstance;
-    fixture.detectChanges();
+    const navigateSpy = jest.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
 
-    expect(component['logoMenuOpen']()).toBe(false);
+    component.navigateToRoot();
+    component.selectSidebarItem({ id: 'dashboard', label: 'Dashboard' });
 
-    const button = fixture.debugElement.query(By.css('.profile-menu-trigger'));
-    button.triggerEventHandler('click', new MouseEvent('click'));
-    fixture.detectChanges();
-    expect(component['logoMenuOpen']()).toBe(true);
-
-    document.dispatchEvent(new MouseEvent('click'));
-    expect(component['logoMenuOpen']()).toBe(false);
+    expect(navigateSpy).toHaveBeenNthCalledWith(1, '/');
+    expect(navigateSpy).toHaveBeenNthCalledWith(2, '/dashboard');
   });
 
-  it('should call logout from the profile menu', () => {
+  it('should call logout when the logout profile action is selected', () => {
     const fixture = TestBed.createComponent(WrapperComponent);
+    fixture.detectChanges();
     const component = fixture.componentInstance;
-    fixture.detectChanges();
 
-    const button = fixture.debugElement.query(By.css('.profile-menu-trigger'));
-    button.triggerEventHandler('click', new MouseEvent('click'));
-    fixture.detectChanges();
+    component.handleProfileAction({ id: 'logout', label: 'Sair' });
 
-    const menuItem = fixture.debugElement.query(By.css('.profile-dropdown .menu-item'));
-    menuItem.triggerEventHandler('click', new MouseEvent('click'));
     expect(authServiceMock.logout).toHaveBeenCalled();
-    expect(component['logoMenuOpen']()).toBe(false);
   });
 });
