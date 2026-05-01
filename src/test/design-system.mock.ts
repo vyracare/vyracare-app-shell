@@ -97,3 +97,37 @@ export class VcTextComponent {
   @Input() muted = false;
   @Input() size = 'md';
 }
+
+@Component({
+  selector: 'vc-navbar',
+  standalone: true,
+  template: ''
+})
+export class VcNavbarComponent {
+  @Input() brandLabel = '';
+  @Input() brandAccent = '';
+  @Input() brandSubtitle = '';
+  @Input() logoClickable = false;
+  @Input() searchValue = '';
+  @Input() notifications: unknown[] = [];
+  @Input() profileName = '';
+  @Input() profileRole = '';
+  @Input() profileInitials = '';
+  @Input() profileActions: unknown[] = [];
+  @Output() searchChange = new EventEmitter<string>();
+  @Output() searchSubmitted = new EventEmitter<string>();
+  @Output() logoClicked = new EventEmitter<void>();
+  @Output() profileActionSelected = new EventEmitter<unknown>();
+}
+
+@Component({
+  selector: 'vc-sidebar',
+  standalone: true,
+  template: ''
+})
+export class VcSidebarComponent {
+  @Input() groups: unknown[] = [];
+  @Input() activeItemId = '';
+  @Input() support: unknown = null;
+  @Output() itemSelected = new EventEmitter<unknown>();
+}
