@@ -4,5 +4,6 @@ export const environment = {
   apiUrl: 'https://ef39m2gyya.execute-api.us-east-1.amazonaws.com/api/auth',
   dashboardRemoteEntry: 'http://localhost:4201/remoteEntry.js',
   userRemoteEntry: 'http://localhost:4202/remoteEntry.js',
-  profileRemoteEntry: 'http://localhost:4203/remoteEntry.js'
+  profileRemoteEntry: 'http://localhost:4203/remoteEntry.js',
+  proceedingsRemoteEntry: 'http://localhost:4204/remoteEntry.js'
 };

@@ -69,7 +69,7 @@ describe('WrapperComponent', () => {
 
     expect(groups.length).toBe(2);
     expect(groups[0].items.map((item) => item.id)).toEqual(['dashboard', 'cadastro/pacientes']);
-    expect(groups[1].items.map((item) => item.id)).toEqual(['cadastro/funcionarios']);
+    expect(groups[1].items.map((item) => item.id)).toEqual(['cadastro/funcionarios', 'cadastro/procedimentos']);
   });
 
   it('should navigate to root and selected sidebar routes', async () => {

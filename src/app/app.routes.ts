@@ -58,5 +58,20 @@ export const routes: Routes = [
           console.error('Nao foi possivel carregar o cadastro de pacientes', err);
           return [ { path: '', component: ErrorComponent } ];
         })
+  },
+  {
+    path: 'cadastro/procedimentos',
+    canActivate: [AuthGuard],
+    loadChildren: () =>
+      loadRemoteModule({
+        type: 'module',
+        remoteEntry: environment.proceedingsRemoteEntry,
+        exposedModule: './Routes'
+      })
+        .then((m) => m.ROUTES ?? m.routes ?? [])
+        .catch((err) => {
+          console.error('Nao foi possivel carregar o cadastro de procedimentos', err);
+          return [ { path: '', component: ErrorComponent } ];
+        })
   }
 ];
