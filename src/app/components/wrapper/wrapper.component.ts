@@ -35,7 +35,8 @@ const SHELL_SIDEBAR_BLUEPRINT: ShellSidebarBlueprint[] = [
   {
     label: 'Cadastros',
     items: [
-      { path: 'cadastro/funcionarios', label: 'Funcionarios', icon: 'person-badge' }
+      { path: 'cadastro/funcionarios', label: 'Funcionarios', icon: 'person-badge' },
+      { path: 'cadastro/procedimentos', label: 'Procedimentos', icon: 'clipboard2-pulse' }
     ]
   }
 ];
