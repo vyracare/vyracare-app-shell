@@ -72,6 +72,11 @@ Os arquivos de ambiente concentram:
 - `api_id`
 - `remoteEntry` de cada MFE
 
+Valores atuais da API de autenticação:
+
+- `api_id`: `309kc8z34d`
+- `apiUrl`: `https://309kc8z34d.execute-api.us-east-1.amazonaws.com/api/auth`
+
 Arquivos:
 
 - [environments.ts](C:/Users/lenin/OneDrive/Desktop/GitHub/Vyracare/vyracare-app-shell/src/environments/environments.ts)
