@@ -1,5 +1,6 @@
 import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { AuthService } from '../../services/auth/auth.service';
@@ -70,7 +71,10 @@ describe('RegisterComponent', () => {
     const fixture = TestBed.createComponent(RegisterComponent);
     const component = fixture.componentInstance;
     const dto = { fullName: 'User Name', email: 'user@example.com', password: 'P@ssw0rd' };
-    const backendError = { error: 'Falha' };
+    const backendError = new HttpErrorResponse({
+      status: 409,
+      error: { message: 'User already exists' }
+    });
 
     authService.register.mockReturnValue(throwError(() => backendError));
 
@@ -80,7 +84,7 @@ describe('RegisterComponent', () => {
     expect(authService.register).toHaveBeenCalledWith(dto);
     expect(navigateMock).not.toHaveBeenCalled();
     expect(component.loading).toBe(false);
-    expect(component.error).toBe(backendError.error);
+    expect(component.error).toBe('Ja existe uma conta para este e-mail. Acesse sua conta ou utilize outro e-mail.');
   });
 
   it('should use fallback message when register error has no backend message', () => {
