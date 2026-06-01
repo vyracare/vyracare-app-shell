@@ -1,6 +1,6 @@
 export const environment = {
   production: false,
-  api_id: "https://axswteu0u1.execute-api.us-east-1.amazonaws.com",
+  api_id: "axswteu0u1",
   apiUrl: 'https://axswteu0u1.execute-api.us-east-1.amazonaws.com/api/auth',
   dashboardRemoteEntry: 'http://localhost:4201/remoteEntry.js',
   userRemoteEntry: 'http://localhost:4202/remoteEntry.js',
