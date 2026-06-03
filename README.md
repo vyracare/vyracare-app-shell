@@ -69,22 +69,26 @@ Arquivo principal do wrapper:
 Os arquivos de ambiente concentram:
 
 - URL base da API de autenticação
-- `api_id`
 - `remoteEntry` de cada MFE
 
 Valores atuais da API de autenticação:
 
-- `api_id`: `309kc8z34d`
-- `apiUrl`: `https://309kc8z34d.execute-api.us-east-1.amazonaws.com/api/auth`
+- `dev`: `https://axswteu0u1.execute-api.us-east-1.amazonaws.com/api/auth`
+- `hml`: `https://jkvfvgsw4l.execute-api.us-east-1.amazonaws.com/api/auth`
+- `prod`: `https://bj6riwfeni.execute-api.us-east-1.amazonaws.com/api/auth`
 
 Arquivos:
 
 - [environments.ts](C:/Users/lenin/OneDrive/Desktop/GitHub/Vyracare/vyracare-app-shell/src/environments/environments.ts)
+- [environments.dev.ts](C:/Users/lenin/OneDrive/Desktop/GitHub/Vyracare/vyracare-app-shell/src/environments/environments.dev.ts)
+- [environments.hml.ts](C:/Users/lenin/OneDrive/Desktop/GitHub/Vyracare/vyracare-app-shell/src/environments/environments.hml.ts)
 - [environments.prod.ts](C:/Users/lenin/OneDrive/Desktop/GitHub/Vyracare/vyracare-app-shell/src/environments/environments.prod.ts)
 
-Em desenvolvimento, os remotos apontam para `localhost`.
+Em desenvolvimento local, os remotos apontam para `localhost`.
 
-Em produção, os remotos apontam para domínios CloudFront publicados por cada MFE.
+No `environment.dev.ts`, os remotos e a API apontam para os endpoints publicados do ambiente `dev`.
+
+Em `hml` e `prod`, os remotos apontam para domínios CloudFront publicados por cada MFE.
 
 ## Execução local
 
