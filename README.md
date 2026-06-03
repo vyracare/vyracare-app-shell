@@ -1,20 +1,20 @@
 # Vyracare App Shell
 
-Shell orquestrador da plataforma Vyracare, responsável por autenticação, navegação principal e carregamento dos micro-frontends via Module Federation.
+Shell orquestrador da plataforma Vyracare, responsavel por autenticacao, navegacao principal e carregamento dos micro-frontends via Module Federation.
 
 ## Objetivo
 
 O `vyracare-app-shell` centraliza:
 
-- fluxo de login, registro, primeiro acesso e recuperação de senha
-- proteção de rotas autenticadas
-- layout principal da aplicação com `vc-navbar` e `vc-sidebar`
+- fluxo de login, registro, primeiro acesso e recuperacao de senha
+- protecao de rotas autenticadas
+- layout principal da aplicacao com `vc-navbar` e `vc-sidebar`
 - carregamento dos MFEs remotos
-- configuração dos endpoints de autenticação e dos `remoteEntry.js`
+- configuracao dos endpoints de autenticacao e dos `remoteEntry.js`
 
 ## Arquitetura
 
-O shell é uma aplicação Angular standalone que atua como host dos micro-frontends.
+O shell e uma aplicacao Angular standalone que atua como host dos micro-frontends.
 
 Hoje ele carrega os seguintes remotos:
 
@@ -31,26 +31,26 @@ Hoje ele carrega os seguintes remotos:
   caminho: `/cadastro/procedimentos`
   remote entry: `proceedingsRemoteEntry`
 
-As rotas estão definidas em [app.routes.ts](C:/Users/lenin/OneDrive/Desktop/GitHub/Vyracare/vyracare-app-shell/src/app/app.routes.ts).
+As rotas estao definidas em [app.routes.ts](C:/Users/lenin/OneDrive/Desktop/GitHub/Vyracare/vyracare-app-shell/src/app/app.routes.ts).
 
 ## Estrutura principal
 
 - `src/app/pages`
-  telas locais do shell, principalmente autenticação e tela de erro
+  telas locais do shell, principalmente autenticacao e tela de erro
 - `src/app/components/wrapper`
-  casca principal da aplicação autenticada
+  casca principal da aplicacao autenticada
 - `src/app/guards`
-  guardas de autenticação
+  guardas de autenticacao
 - `src/app/services/auth`
-  integração com login e sessão
+  integracao com login e sessao
 - `src/environments`
-  URLs da API de autenticação e dos micro-frontends
+  URLs da API de autenticacao e dos micro-frontends
 
 ## Layout e Design System
 
 O shell utiliza `@vyracare/design-system` como base visual.
 
-Os componentes principais do layout são:
+Os componentes principais do layout sao:
 
 - `vc-navbar`
 - `vc-sidebar`
@@ -58,20 +58,20 @@ Os componentes principais do layout são:
 - `vc-heading`
 - `vc-text`
 
-O wrapper também monta a sidebar dinamicamente com base nas rotas realmente disponíveis no shell, evitando exibir itens sem rota correspondente.
+O wrapper tambem monta a sidebar dinamicamente com base nas rotas realmente disponiveis no shell, evitando exibir itens sem rota correspondente.
 
 Arquivo principal do wrapper:
 
 - [wrapper.component.ts](C:/Users/lenin/OneDrive/Desktop/GitHub/Vyracare/vyracare-app-shell/src/app/components/wrapper/wrapper.component.ts)
 
-## Configuração de ambiente
+## Configuracao de ambiente
 
 Os arquivos de ambiente concentram:
 
-- URL base da API de autenticação
+- URL base da API de autenticacao
 - `remoteEntry` de cada MFE
 
-Valores atuais da API de autenticação:
+Valores atuais da API de autenticacao:
 
 - `dev`: `https://axswteu0u1.execute-api.us-east-1.amazonaws.com/api/auth`
 - `hml`: `https://jkvfvgsw4l.execute-api.us-east-1.amazonaws.com/api/auth`
@@ -88,11 +88,11 @@ Em desenvolvimento local, os remotos apontam para `localhost`.
 
 No `environment.dev.ts`, os remotos e a API apontam para os endpoints publicados do ambiente `dev`.
 
-Em `hml` e `prod`, os remotos apontam para domínios CloudFront publicados por cada MFE.
+Em `hml` e `prod`, os remotos apontam para dominios CloudFront publicados por cada MFE.
 
-## Execução local
+## Execucao local
 
-Antes de instalar dependências, autentique no CodeArtifact:
+Antes de instalar dependencias, autentique no CodeArtifact:
 
 ```bash
 npm run codeartifact:login
@@ -105,7 +105,7 @@ npm install
 npm start
 ```
 
-Aplicação local:
+Aplicacao local:
 
 ```text
 http://localhost:4200
@@ -113,14 +113,14 @@ http://localhost:4200
 
 ## Executar com os MFEs
 
-Para o shell funcionar completamente em desenvolvimento, os remotos esperados são:
+Para o shell funcionar completamente em desenvolvimento, os remotos esperados sao:
 
 - `dashboard` em `http://localhost:4201`
 - `user` em `http://localhost:4202`
 - `profile` em `http://localhost:4203`
 - `proceedings` em `http://localhost:4204`
 
-Se algum remoto não estiver disponível, o shell trata a falha e redireciona para a tela local de erro.
+Se algum remoto nao estiver disponivel, o shell trata a falha e redireciona para a tela local de erro.
 
 ## Scripts principais
 
@@ -141,7 +141,7 @@ Esse comando pode ser usado quando o ecossistema local estiver preparado para su
 
 ## Testes
 
-Os testes unitários usam Jest.
+Os testes unitarios usam Jest.
 
 ```bash
 npm test
@@ -149,22 +149,32 @@ npm test
 
 ## Deploy
 
-O projeto publica a partir da branch `develop`, utilizando a esteira Angular reutilizável do repositório `vyracare-infra-pipes-angular`.
+O projeto publica a partir da branch `develop`, utilizando a esteira Angular reutilizavel do repositorio `vyracare-infra-pipes-angular`.
 
-O deploy de produção depende de:
+O deploy de producao depende de:
 
 - build Angular
 - bucket S3
-- distribuição CloudFront
-- atualização dos artefatos publicados
+- distribuicao CloudFront
+- atualizacao dos artefatos publicados
 
-## Integração com novos MFEs
+## Integracao com novos MFEs
 
-Quando um novo MFE precisar ser incorporado ao shell, o fluxo esperado é:
+Quando um novo MFE precisar ser incorporado ao shell, o fluxo esperado e:
 
 1. publicar o novo `remoteEntry.js`
 2. adicionar a nova propriedade no `environment`
 3. mapear a nova rota em `app.routes.ts`
-4. incluir o item correspondente na navegação do wrapper, se necessário
+4. incluir o item correspondente na navegacao do wrapper, se necessario
 
-No fluxo mais recente do template Angular, a própria esteira do MFE pode atualizar automaticamente o `remoteEntry` no shell consumidor quando o repositório do orquestrador estiver configurado.
+No fluxo mais recente do template Angular, a propria esteira do MFE pode atualizar automaticamente o `remoteEntry` no shell consumidor quando o repositorio do orquestrador estiver configurado.
+
+## Convencao de commits
+
+Os commits deste repositorio devem ser escritos em portugues.
+
+Padrao recomendado:
+
+- `feat: adiciona carregamento do mfe de perfil`
+- `fix: corrige url de autenticacao no ambiente de homologacao`
+- `docs: atualiza explicacao do fluxo de deploy`
