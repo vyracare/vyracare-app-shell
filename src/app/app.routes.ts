@@ -17,16 +17,16 @@ export const routes: Routes = [
   {
     path: 'dashboard',
     canActivate: [AuthGuard],
-    loadComponent: () =>
+    loadChildren: () =>
       loadRemoteModule({
         type: 'module',
         remoteEntry: environment.dashboardRemoteEntry,
-        exposedModule: './App'
+        exposedModule: './Routes'
       })
-        .then((m) => m.App)
+        .then((m) => m.ROUTES ?? m.routes ?? [])
         .catch((err) => {
           console.error('Nao foi possivel carregar o dashboard remoto', err);
-          return ErrorComponent;
+          return [ { path: '', component: ErrorComponent } ];
         })
   },
   {
