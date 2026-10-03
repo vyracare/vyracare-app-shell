@@ -68,7 +68,7 @@ describe('WrapperComponent', () => {
     const groups = component['sidebarGroups'] as Array<{ items: Array<{ id: string }> }>;
 
     expect(groups.length).toBe(2);
-    expect(groups[0].items.map((item) => item.id)).toEqual(['dashboard', 'cadastro/pacientes']);
+    expect(groups[0].items.map((item) => item.id)).toEqual(['dashboard', 'dashboard/agenda/novo', 'pacientes']);
     expect(groups[1].items.map((item) => item.id)).toEqual(['cadastro/funcionarios', 'cadastro/procedimentos']);
   });
 

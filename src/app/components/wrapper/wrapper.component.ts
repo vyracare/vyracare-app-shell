@@ -29,7 +29,8 @@ const SHELL_SIDEBAR_BLUEPRINT: ShellSidebarBlueprint[] = [
     label: 'Area Clinica',
     items: [
       { path: 'dashboard', label: 'Dashboard', icon: 'grid-1x2' },
-      { path: 'cadastro/pacientes', label: 'Pacientes', icon: 'people' }
+      { path: 'dashboard/agenda/novo', label: 'Atendimentos', icon: 'calendar-event' },
+      { path: 'pacientes', label: 'Pacientes', icon: 'people' }
     ]
   },
   {
@@ -144,7 +145,7 @@ export class WrapperComponent {
       .map((group) => ({
         label: group.label,
         items: group.items
-          .filter((item) => routes.some((route) => route.path === item.path))
+          .filter((item) => routes.some((route) => route.path === item.path || route.path === item.path.split('/')[0]))
           .map((item) => ({
             id: item.path,
             label: item.label,
