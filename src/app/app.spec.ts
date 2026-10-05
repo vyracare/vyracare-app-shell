@@ -38,6 +38,13 @@ describe('App', () => {
     expect(fixture.componentInstance).toBeTruthy();
   });
 
+  it('should keep the global toast viewport mounted for every route', () => {
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('vc-toast-container')).not.toBeNull();
+  });
+
   it('should render wrapper shell for protected routes', () => {
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();

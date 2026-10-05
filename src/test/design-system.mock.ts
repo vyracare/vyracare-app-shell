@@ -131,3 +131,10 @@ export class VcSidebarComponent {
   @Input() support: unknown = null;
   @Output() itemSelected = new EventEmitter<unknown>();
 }
+
+@Component({
+  selector: 'vc-toast-container',
+  standalone: true,
+  template: '<div data-testid="toast-container"></div>'
+})
+export class VcToastContainerComponent {}
