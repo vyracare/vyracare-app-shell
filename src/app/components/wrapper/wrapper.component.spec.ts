@@ -12,6 +12,7 @@ describe('WrapperComponent', () => {
     logout: jest.Mock;
     getUserDisplayName: jest.Mock;
     getUserInitials: jest.Mock;
+    getUserAccessLevel: jest.Mock;
   };
   let router: Router;
 
@@ -19,7 +20,8 @@ describe('WrapperComponent', () => {
     authServiceMock = {
       logout: jest.fn(),
       getUserDisplayName: jest.fn().mockReturnValue('Test User'),
-      getUserInitials: jest.fn().mockReturnValue('TU')
+      getUserInitials: jest.fn().mockReturnValue('TU'),
+      getUserAccessLevel: jest.fn().mockReturnValue('Administrador')
     };
 
     await TestBed.configureTestingModule({
@@ -51,6 +53,7 @@ describe('WrapperComponent', () => {
 
     expect(component['userDisplayName']).toBe('Test User');
     expect(component['userInitials']).toBe('TU');
+    expect(component['userAccessLevel']).toBe('Administrador');
   });
 
   it('should host a router outlet inside the main area', () => {

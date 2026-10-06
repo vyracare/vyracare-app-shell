@@ -87,6 +87,20 @@ export class AuthService {
     return this.buildInitials(this.getUserDisplayName());
   }
 
+  /** Returns the access level issued by the authentication API for the current session. */
+  getUserAccessLevel(): string {
+    const payload = this.getJwtPayload();
+    const accessLevel = payload?.['access_level']
+      ?? payload?.['role']
+      ?? payload?.['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
+
+    if (typeof accessLevel === 'string' && accessLevel.trim()) {
+      return accessLevel.trim();
+    }
+
+    return 'Perfil nao informado';
+  }
+
   isAuthenticated(): boolean {
     const token = this.getToken();
     if (!token) return false;

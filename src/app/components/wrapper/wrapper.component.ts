@@ -80,6 +80,7 @@ export class WrapperComponent {
   };
   protected readonly userDisplayName: string;
   protected readonly userInitials: string;
+  protected readonly userAccessLevel: string;
   protected readonly searchValue = signal('');
   protected readonly currentUrl = signal('/');
   protected readonly sidebarGroups: VcSidebarGroup[];
@@ -91,6 +92,7 @@ export class WrapperComponent {
   ) {
     this.userDisplayName = this.authService.getUserDisplayName();
     this.userInitials = this.authService.getUserInitials();
+    this.userAccessLevel = this.authService.getUserAccessLevel();
     this.sidebarGroups = this.buildSidebarGroups(this.router.config);
     this.syncCurrentUrl();
 

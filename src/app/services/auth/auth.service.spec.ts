@@ -198,6 +198,25 @@ describe('AuthService', () => {
     expect(service.getUserInitials()).toBe('AP');
   });
 
+  it('should resolve the access level from the jwt claims', () => {
+    service.saveToken(createTokenWithPayload({ access_level: '  Administrador  ' }));
+    expect(service.getUserAccessLevel()).toBe('Administrador');
+
+    service.saveToken(createTokenWithPayload({ role: 'Gestor' }));
+    expect(service.getUserAccessLevel()).toBe('Gestor');
+
+    service.saveToken(createTokenWithPayload({
+      'http://schemas.microsoft.com/ws/2008/06/identity/claims/role': 'Leitura'
+    }));
+    expect(service.getUserAccessLevel()).toBe('Leitura');
+  });
+
+  it('should not claim an administrator profile when the jwt has no access level', () => {
+    service.saveToken(createTokenWithPayload({ name: 'Maria Silva' }));
+
+    expect(service.getUserAccessLevel()).toBe('Perfil nao informado');
+  });
+
   it('should resolve display name from email when name claim is blank', () => {
     service.saveToken(createTokenWithPayload({ name: '   ', email: 'user@example.com' }));
 

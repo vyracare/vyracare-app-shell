@@ -26,7 +26,8 @@ describe('App', () => {
           useValue: {
             logout: jest.fn(),
             getUserDisplayName: jest.fn().mockReturnValue('Test User'),
-            getUserInitials: jest.fn().mockReturnValue('TU')
+            getUserInitials: jest.fn().mockReturnValue('TU'),
+            getUserAccessLevel: jest.fn().mockReturnValue('Administrador')
           }
         }
       ]
