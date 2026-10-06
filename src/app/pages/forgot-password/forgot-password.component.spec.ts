@@ -85,7 +85,7 @@ describe('ForgotPasswordComponent', () => {
     component.form.setValue({ email: 'user@example.com', password: 'secret1' });
     component.onSubmit();
 
-    expect(component.error()).toBe('Falha');
+    expect(component.error()).toBe('Falha ao atualizar a senha. Tente novamente.');
     expect(component.success()).toBe(false);
     expect(component.loading()).toBe(false);
   });

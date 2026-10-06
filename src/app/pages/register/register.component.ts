@@ -4,7 +4,7 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angula
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { finalize } from 'rxjs';
-import { VcButtonComponent, VcInputComponent } from '@vyracare/design-system';
+import { VcButtonComponent, VcInputComponent, VcToastService } from '@vyracare/design-system';
 import { AuthService } from '../../services/auth/auth.service';
 
 @Component({
@@ -19,6 +19,7 @@ import { AuthService } from '../../services/auth/auth.service';
   templateUrl: './register.component.html',
   styleUrls: ['./register.component.scss']
 })
+/** Coordena o cadastro publico e seus retornos seguros de sucesso ou falha. */
 export class RegisterComponent {
   form: FormGroup;
   loading = false;
@@ -27,7 +28,8 @@ export class RegisterComponent {
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private toast: VcToastService
   ) {
     this.form = this.fb.group({
       fullName: ['', [Validators.required]],
@@ -36,7 +38,8 @@ export class RegisterComponent {
     });
   }
 
-  onSubmit() {
+  /** Valida e envia o cadastro, notificando o resultado antes de navegar. */
+  onSubmit(): void {
     if (this.form.invalid) return;
 
     this.loading = true;
@@ -50,18 +53,23 @@ export class RegisterComponent {
       })
     ).subscribe({
       next: () => {
+        this.toast.success('Conta criada', 'Seu cadastro foi concluido com sucesso.');
         this.goToLogin();
       },
       error: (err) => {
-        this.error = this.extractErrorMessage(err);
+        const message = this.extractErrorMessage(err);
+        this.error = message;
+        this.toast.error('Nao foi possivel criar a conta', message);
       }
     });
   }
 
-  goToLogin() {
+  /** Retorna o usuario para a tela de autenticacao. */
+  goToLogin(): void {
     this.router.navigate(['/login']);
   }
 
+  /** Converte falhas conhecidas da API em mensagens que nao expoem detalhes internos. */
   private extractErrorMessage(error: unknown): string {
     if (error instanceof HttpErrorResponse) {
       if (typeof error.error === 'string' && error.error.trim()) {
@@ -85,6 +93,7 @@ export class RegisterComponent {
     return 'Falha no registro. Tente novamente.';
   }
 
+  /** Traduz somente mensagens publicas conhecidas e oculta respostas inesperadas. */
   private translateBackendMessage(message: string): string {
     const normalized = message.trim().toLowerCase();
 
@@ -96,6 +105,6 @@ export class RegisterComponent {
       return 'Informe um e-mail valido para concluir o cadastro.';
     }
 
-    return message;
+    return 'Nao foi possivel concluir o cadastro. Revise os dados e tente novamente.';
   }
 }

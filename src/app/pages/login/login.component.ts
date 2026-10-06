@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { VcButtonComponent, VcInputComponent } from '@vyracare/design-system';
+import { VcButtonComponent, VcInputComponent, VcToastService } from '@vyracare/design-system';
 import { AuthService } from '../../services/auth/auth.service';
 
 @Component({
@@ -18,6 +18,7 @@ import { AuthService } from '../../services/auth/auth.service';
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss']
 })
+/** Coordena a autenticacao e apresenta falhas sem expor respostas internas da API. */
 export class LoginComponent {
   form: FormGroup;
   loading = false;
@@ -26,7 +27,8 @@ export class LoginComponent {
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private toast: VcToastService
   ) {
     this.form = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
@@ -34,7 +36,8 @@ export class LoginComponent {
     });
   }
 
-  onSubmit() {
+  /** Valida as credenciais, persiste o token recebido e inicia a sessao. */
+  onSubmit(): void {
     if (this.form.invalid) return;
 
     this.loading = true;
@@ -48,25 +51,31 @@ export class LoginComponent {
 
         const token = response?.token ?? response?.accessToken ?? response?.access_token;
         if (!token) {
-          this.error = 'Não foi possível validar a sessão. Tente novamente.';
+          const message = 'Não foi possível validar a sessão. Tente novamente.';
+          this.error = message;
+          this.toast.error('Falha ao iniciar sessao', message);
           return;
         }
 
         this.authService.saveToken(token);
         this.router.navigate(['/dashboard']);
       },
-      error: (err) => {
+      error: () => {
         this.loading = false;
-        this.error = err?.error || 'Falha no login. Verifique suas credenciais.';
+        const message = 'Falha no login. Verifique suas credenciais.';
+        this.error = message;
+        this.toast.error('Nao foi possivel entrar', message);
       }
     });
   }
 
-  goToRegister() {
+  /** Abre o fluxo de criacao de conta. */
+  goToRegister(): void {
     this.router.navigate(['/register']);
   }
 
-  goToFirstAccess() {
+  /** Abre o fluxo de definicao da senha inicial. */
+  goToFirstAccess(): void {
     this.router.navigate(['/first-access']);
   }
 }

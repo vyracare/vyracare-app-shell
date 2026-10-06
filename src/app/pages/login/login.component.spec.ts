@@ -128,7 +128,7 @@ describe('LoginComponent', () => {
     expect(authService.login).toHaveBeenCalledWith(credentials);
     expect(navigateSpy).not.toHaveBeenCalled();
     expect(component.loading).toBe(false);
-    expect(component.error).toBe(backendError.error);
+    expect(component.error).toBe('Falha no login. Verifique suas credenciais.');
   });
 
   it('should use fallback message when login error has no backend message', () => {
