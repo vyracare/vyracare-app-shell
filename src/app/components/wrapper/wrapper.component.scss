@@ -21,6 +21,28 @@
 
 .shell-main {
   flex: 1;
+  min-width: 0;
   padding: 2rem;
   overflow: auto;
+}
+
+@media (max-width: 720px) {
+  .shell-layout { min-height: 100dvh; }
+  .shell-body { display: block; }
+
+  .shell-sidebar {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 950;
+    display: block;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .shell-main {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 1rem 0.85rem calc(5rem + env(safe-area-inset-bottom));
+    overflow: visible;
+  }
 }
