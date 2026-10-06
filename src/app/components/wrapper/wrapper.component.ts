@@ -29,7 +29,7 @@ const SHELL_SIDEBAR_BLUEPRINT: ShellSidebarBlueprint[] = [
     label: 'Area Clinica',
     items: [
       { path: 'dashboard', label: 'Dashboard', icon: 'grid-1x2' },
-      { path: 'dashboard/agenda/novo', label: 'Atendimentos', icon: 'calendar-event' },
+      { path: 'dashboard/agenda', label: 'Atendimentos', icon: 'calendar-event' },
       { path: 'pacientes', label: 'Pacientes', icon: 'people' }
     ]
   },
