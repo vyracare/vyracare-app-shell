@@ -81,7 +81,7 @@
 
   .mobile-menu-trigger {
     position: fixed;
-    right: max(1rem, env(safe-area-inset-right));
+    left: max(1rem, env(safe-area-inset-left));
     bottom: calc(1rem + env(safe-area-inset-bottom));
     z-index: 1000;
     display: inline-flex;
