@@ -98,9 +98,13 @@ describe('WrapperComponent', () => {
 
     expect(component['mobileMenuOpen']()).toBe(true);
     expect((fixture.nativeElement as HTMLElement).querySelector('.shell-sidebar')?.classList).toContain('is-open');
+    expect((fixture.nativeElement as HTMLElement).querySelector('.mobile-menu-trigger')).toBeNull();
 
     component.handleEscape();
+    fixture.detectChanges();
+
     expect(component['mobileMenuOpen']()).toBe(false);
+    expect((fixture.nativeElement as HTMLElement).querySelector('.mobile-menu-trigger')).not.toBeNull();
   });
 
   it('should call logout when the logout profile action is selected', () => {

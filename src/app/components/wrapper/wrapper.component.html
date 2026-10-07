@@ -16,16 +16,18 @@
     (profileActionSelected)="handleProfileAction($event)"
   ></vc-navbar>
 
-  <button
-    type="button"
-    class="mobile-menu-trigger"
-    aria-controls="shell-navigation"
-    [attr.aria-expanded]="mobileMenuOpen()"
-    (click)="toggleMobileMenu()"
-  >
-    <vc-icon name="list" size="md" [decorative]="true"></vc-icon>
-    <span>Menu</span>
-  </button>
+  @if (!mobileMenuOpen()) {
+    <button
+      type="button"
+      class="mobile-menu-trigger"
+      aria-controls="shell-navigation"
+      aria-expanded="false"
+      (click)="toggleMobileMenu()"
+    >
+      <vc-icon name="list" size="md" [decorative]="true"></vc-icon>
+      <span>Menu</span>
+    </button>
+  }
 
   <button
     type="button"
