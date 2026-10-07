@@ -81,21 +81,21 @@
 
   .mobile-menu-trigger {
     position: fixed;
-    left: max(1rem, env(safe-area-inset-left));
-    bottom: calc(1rem + env(safe-area-inset-bottom));
+    top: calc(0.85rem + env(safe-area-inset-top));
+    left: calc(20rem + env(safe-area-inset-left));
     z-index: 1000;
     display: inline-flex;
     align-items: center;
-    gap: .45rem;
-    min-height: 3rem;
-    padding: .7rem 1rem;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    padding: 0;
     border: 0;
     border-radius: 999px;
-    background: linear-gradient(135deg, #5a3be7, #ff6c88);
-    color: #fff;
-    box-shadow: 0 14px 32px rgba(90, 59, 231, .32);
+    background: #f4f1ff;
+    color: #5a3be7;
+    box-shadow: 0 8px 20px rgba(90, 59, 231, .16);
     font: inherit;
-    font-weight: 700;
     cursor: pointer;
   }
 
@@ -161,13 +161,18 @@
   .shell-main {
     width: 100%;
     box-sizing: border-box;
-    padding: 1.25rem 1rem calc(5rem + env(safe-area-inset-bottom));
+    padding: 1.25rem 1rem calc(1.25rem + env(safe-area-inset-bottom));
     overflow: visible;
   }
 }
 
 @media (max-width: 720px) {
   .shell-main { padding-inline: .85rem; }
+
+  .mobile-menu-trigger {
+    top: calc(0.65rem + env(safe-area-inset-top));
+    left: calc(7.25rem + env(safe-area-inset-left));
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

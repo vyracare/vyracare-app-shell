@@ -104,7 +104,10 @@ describe('WrapperComponent', () => {
     fixture.detectChanges();
 
     expect(component['mobileMenuOpen']()).toBe(false);
-    expect((fixture.nativeElement as HTMLElement).querySelector('.mobile-menu-trigger')).not.toBeNull();
+    const menuTrigger = (fixture.nativeElement as HTMLElement).querySelector('.mobile-menu-trigger');
+    expect(menuTrigger).not.toBeNull();
+    expect(menuTrigger?.getAttribute('aria-label')).toBe('Abrir menu de navegacao');
+    expect(menuTrigger?.textContent?.trim()).toBe('');
   });
 
   it('should call logout when the logout profile action is selected', () => {
