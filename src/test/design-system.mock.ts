@@ -99,6 +99,18 @@ export class VcTextComponent {
 }
 
 @Component({
+  selector: 'vc-icon',
+  standalone: true,
+  template: '<span [attr.aria-label]="ariaLabel || null"></span>'
+})
+export class VcIconComponent {
+  @Input() name = '';
+  @Input() size: string | number = 'md';
+  @Input() ariaLabel = '';
+  @Input() decorative = true;
+}
+
+@Component({
   selector: 'vc-navbar',
   standalone: true,
   template: ''

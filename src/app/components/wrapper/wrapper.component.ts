@@ -1,10 +1,11 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, HostListener, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NavigationEnd, Router, RouterOutlet, type Route } from '@angular/router';
 import { filter } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   VcNavbarComponent,
+  VcIconComponent,
   VcSidebarComponent,
   type VcNavbarAction,
   type VcNotificationItem,
@@ -45,7 +46,7 @@ const SHELL_SIDEBAR_BLUEPRINT: ShellSidebarBlueprint[] = [
 @Component({
   selector: 'vyracare-wrapper',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, VcNavbarComponent, VcSidebarComponent],
+  imports: [CommonModule, RouterOutlet, VcNavbarComponent, VcIconComponent, VcSidebarComponent],
   templateUrl: './wrapper.component.html',
   styleUrls: ['./wrapper.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -83,6 +84,8 @@ export class WrapperComponent {
   protected readonly userAccessLevel: string;
   protected readonly searchValue = signal('');
   protected readonly currentUrl = signal('/');
+  /** Controls the responsive navigation drawer without affecting the desktop sidebar. */
+  protected readonly mobileMenuOpen = signal(false);
   protected readonly sidebarGroups: VcSidebarGroup[];
 
   constructor(
@@ -131,7 +134,24 @@ export class WrapperComponent {
 
   /** Routes the user according to the selected sidebar item. */
   selectSidebarItem(item: VcSidebarItem): void {
+    this.closeMobileMenu();
     void this.router.navigateByUrl(`/${item.id}`);
+  }
+
+  /** Opens or closes the responsive navigation drawer. */
+  toggleMobileMenu(): void {
+    this.mobileMenuOpen.update((open) => !open);
+  }
+
+  /** Closes the responsive navigation drawer and restores the page context. */
+  closeMobileMenu(): void {
+    this.mobileMenuOpen.set(false);
+  }
+
+  /** Lets keyboard users dismiss the responsive drawer with Escape. */
+  @HostListener('document:keydown.escape')
+  handleEscape(): void {
+    this.closeMobileMenu();
   }
 
   /** Executes shell profile actions. */
@@ -160,5 +180,6 @@ export class WrapperComponent {
   /** Normalizes the current URL so sidebar matching stays stable. */
   private syncCurrentUrl(): void {
     this.currentUrl.set(this.router.url.split('?')[0]);
+    this.closeMobileMenu();
   }
 }

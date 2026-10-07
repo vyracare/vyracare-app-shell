@@ -16,8 +16,34 @@
     (profileActionSelected)="handleProfileAction($event)"
   ></vc-navbar>
 
+  <button
+    type="button"
+    class="mobile-menu-trigger"
+    aria-controls="shell-navigation"
+    [attr.aria-expanded]="mobileMenuOpen()"
+    (click)="toggleMobileMenu()"
+  >
+    <vc-icon name="list" size="md" [decorative]="true"></vc-icon>
+    <span>Menu</span>
+  </button>
+
+  <button
+    type="button"
+    class="shell-navigation-backdrop"
+    [class.is-open]="mobileMenuOpen()"
+    aria-label="Fechar menu de navegacao"
+    [attr.tabindex]="mobileMenuOpen() ? 0 : -1"
+    (click)="closeMobileMenu()"
+  ></button>
+
   <div class="shell-body">
-    <div class="shell-sidebar">
+    <div id="shell-navigation" class="shell-sidebar" [class.is-open]="mobileMenuOpen()">
+      <div class="shell-sidebar-header">
+        <strong>Navegacao</strong>
+        <button type="button" aria-label="Fechar menu" (click)="closeMobileMenu()">
+          <vc-icon name="x-lg" size="sm" [decorative]="true"></vc-icon>
+        </button>
+      </div>
       <vc-sidebar
         [groups]="sidebarGroups"
         [activeItemId]="activeSidebarItemId"

@@ -88,6 +88,21 @@ describe('WrapperComponent', () => {
     expect(navigateSpy).toHaveBeenNthCalledWith(2, '/dashboard');
   });
 
+  it('should open and close the responsive navigation drawer', () => {
+    const fixture = TestBed.createComponent(WrapperComponent);
+    fixture.detectChanges();
+    const component = fixture.componentInstance;
+
+    component.toggleMobileMenu();
+    fixture.detectChanges();
+
+    expect(component['mobileMenuOpen']()).toBe(true);
+    expect((fixture.nativeElement as HTMLElement).querySelector('.shell-sidebar')?.classList).toContain('is-open');
+
+    component.handleEscape();
+    expect(component['mobileMenuOpen']()).toBe(false);
+  });
+
   it('should call logout when the logout profile action is selected', () => {
     const fixture = TestBed.createComponent(WrapperComponent);
     fixture.detectChanges();
