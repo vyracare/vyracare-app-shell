@@ -171,15 +171,31 @@
 }
 
 @media (max-width: 720px) {
-  .shell-main { padding-inline: .85rem; }
+  .shell-main {
+    padding-right: .85rem;
+    padding-bottom: calc(6.5rem + env(safe-area-inset-bottom));
+    padding-left: .85rem;
+  }
 
   .mobile-menu-trigger {
-    top: calc(0.65rem + env(safe-area-inset-top));
-    left: calc(0.75rem + env(safe-area-inset-left));
+    display: none;
   }
 
   :host ::ng-deep vc-navbar .vc-navbar__logo-area {
-    margin-left: 3.25rem;
+    margin-left: 0;
+  }
+
+  .shell-sidebar {
+    inset: auto max(.65rem, env(safe-area-inset-right)) max(.55rem, env(safe-area-inset-bottom)) max(.65rem, env(safe-area-inset-left));
+    width: auto;
+    max-height: min(76dvh, 38rem);
+    border-radius: 1.5rem;
+    box-shadow: 0 -20px 55px rgba(23, 25, 48, .24);
+    transform: translateY(calc(100% + 2rem));
+  }
+
+  .shell-sidebar.is-open {
+    transform: translateY(0);
   }
 }
 

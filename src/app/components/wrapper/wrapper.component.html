@@ -38,6 +38,16 @@
     (click)="closeMobileMenu()"
   ></button>
 
+  @if (!mobileMenuOpen()) {
+    <vyracare-mobile-bottom-navigation
+      [items]="mobileNavigationItems"
+      [activeItemId]="activeSidebarItemId"
+      [menuActive]="mobileMenuContainsActiveRoute"
+      (itemSelected)="selectSidebarItem($event)"
+      (menuRequested)="toggleMobileMenu()"
+    />
+  }
+
   <div class="shell-body">
     <div id="shell-navigation" class="shell-sidebar" [class.is-open]="mobileMenuOpen()">
       <div class="shell-sidebar-header">

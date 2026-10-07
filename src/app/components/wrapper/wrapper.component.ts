@@ -15,6 +15,7 @@ import {
 } from '@vyracare/design-system';
 
 import { AuthService } from '../../services/auth/auth.service';
+import { MobileBottomNavigationComponent } from '../mobile-bottom-navigation/mobile-bottom-navigation.component';
 
 type ShellSidebarBlueprint = {
   label: string;
@@ -46,7 +47,14 @@ const SHELL_SIDEBAR_BLUEPRINT: ShellSidebarBlueprint[] = [
 @Component({
   selector: 'vyracare-wrapper',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, VcNavbarComponent, VcIconComponent, VcSidebarComponent],
+  imports: [
+    CommonModule,
+    RouterOutlet,
+    VcNavbarComponent,
+    VcIconComponent,
+    VcSidebarComponent,
+    MobileBottomNavigationComponent
+  ],
   templateUrl: './wrapper.component.html',
   styleUrls: ['./wrapper.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -87,6 +95,11 @@ export class WrapperComponent {
   /** Controls the responsive navigation drawer without affecting the desktop sidebar. */
   protected readonly mobileMenuOpen = signal(false);
   protected readonly sidebarGroups: VcSidebarGroup[];
+  protected readonly mobileNavigationItems: VcSidebarItem[] = [
+    { id: 'dashboard', label: 'Início', icon: 'grid-1x2' },
+    { id: 'dashboard/agenda', label: 'Agenda', icon: 'calendar-event' },
+    { id: 'pacientes', label: 'Pacientes', icon: 'people' }
+  ];
 
   constructor(
     private readonly authService: AuthService,
@@ -110,11 +123,19 @@ export class WrapperComponent {
   /** Active sidebar item derived from the current route tree. */
   protected get activeSidebarItemId(): string {
     const currentPath = this.currentUrl();
-    const activeItem = this.sidebarGroups
-      .flatMap((group) => group.items)
-      .find((item) => currentPath === item.id || currentPath.startsWith(`${item.id}/`));
+    const items = this.sidebarGroups.flatMap((group) => group.items);
+    const activeItem =
+      items.find((item) => currentPath === item.id) ??
+      items
+        .filter((item) => currentPath.startsWith(`${item.id}/`))
+        .sort((left, right) => right.id.length - left.id.length)[0];
 
     return activeItem?.id ?? '';
+  }
+
+  /** Highlights the mobile menu tab while a secondary registration route is active. */
+  protected get mobileMenuContainsActiveRoute(): boolean {
+    return this.activeSidebarItemId.startsWith('cadastro/');
   }
 
   /** Keeps the search field state in sync with the navbar output. */
@@ -179,7 +200,7 @@ export class WrapperComponent {
 
   /** Normalizes the current URL so sidebar matching stays stable. */
   private syncCurrentUrl(): void {
-    this.currentUrl.set(this.router.url.split('?')[0]);
+    this.currentUrl.set(this.router.url.split('?')[0].replace(/^\/+|\/+$/g, ''));
     this.closeMobileMenu();
   }
 }

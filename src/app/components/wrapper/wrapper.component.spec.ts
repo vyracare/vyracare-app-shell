@@ -75,6 +75,48 @@ describe('WrapperComponent', () => {
     expect(groups[1].items.map((item) => item.id)).toEqual(['cadastro/funcionarios', 'cadastro/procedimentos']);
   });
 
+  it('should expose the primary destinations in the mobile navigation', () => {
+    const fixture = TestBed.createComponent(WrapperComponent);
+    fixture.detectChanges();
+
+    const labels = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('.mobile-bottom-nav__item > span')
+    ).map((element) => element.textContent?.trim());
+
+    expect(labels).toEqual(['Início', 'Agenda', 'Pacientes', 'Menu']);
+  });
+
+  it('should navigate and open the complete menu from the mobile bar', () => {
+    const fixture = TestBed.createComponent(WrapperComponent);
+    fixture.detectChanges();
+    const navigateSpy = jest.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
+    const buttons = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>('.mobile-bottom-nav__item')
+    );
+
+    buttons[1].click();
+    expect(navigateSpy).toHaveBeenCalledWith('/dashboard/agenda');
+
+    buttons[3].click();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance['mobileMenuOpen']()).toBe(true);
+    expect((fixture.nativeElement as HTMLElement).querySelector('.mobile-bottom-nav')).toBeNull();
+  });
+
+  it('should prefer the most specific active route', () => {
+    const fixture = TestBed.createComponent(WrapperComponent);
+    fixture.detectChanges();
+    const component = fixture.componentInstance;
+
+    component['currentUrl'].set('dashboard/agenda/novo');
+    expect(component['activeSidebarItemId']).toBe('dashboard/agenda');
+
+    component['currentUrl'].set('cadastro/funcionarios/editar/123');
+    expect(component['activeSidebarItemId']).toBe('cadastro/funcionarios');
+    expect(component['mobileMenuContainsActiveRoute']).toBe(true);
+  });
+
   it('should navigate to root and selected sidebar routes', async () => {
     const fixture = TestBed.createComponent(WrapperComponent);
     fixture.detectChanges();
@@ -99,6 +141,7 @@ describe('WrapperComponent', () => {
     expect(component['mobileMenuOpen']()).toBe(true);
     expect((fixture.nativeElement as HTMLElement).querySelector('.shell-sidebar')?.classList).toContain('is-open');
     expect((fixture.nativeElement as HTMLElement).querySelector('.mobile-menu-trigger')).toBeNull();
+    expect((fixture.nativeElement as HTMLElement).querySelector('.mobile-bottom-nav')).toBeNull();
 
     component.handleEscape();
     fixture.detectChanges();
@@ -108,6 +151,7 @@ describe('WrapperComponent', () => {
     expect(menuTrigger).not.toBeNull();
     expect(menuTrigger?.getAttribute('aria-label')).toBe('Abrir menu de navegacao');
     expect(menuTrigger?.textContent?.trim()).toBe('');
+    expect((fixture.nativeElement as HTMLElement).querySelector('.mobile-bottom-nav')).not.toBeNull();
   });
 
   it('should call logout when the logout profile action is selected', () => {
