@@ -26,7 +26,7 @@ export const routes: Routes = [
         .then((m) => m.ROUTES ?? m.routes ?? [])
         .catch((err) => {
           console.error('Nao foi possivel carregar o dashboard remoto', err);
-          return [ { path: '', component: ErrorComponent } ];
+          return [{ path: '**', component: ErrorComponent }];
         })
   },
   {
@@ -41,7 +41,7 @@ export const routes: Routes = [
         .then((m) => m.ROUTES ?? m.routes ?? [])
         .catch((err) => {
           console.error('Nao foi possivel carregar o cadastro de funcionarios', err);
-          return [ { path: '', component: ErrorComponent } ];
+          return [{ path: '**', component: ErrorComponent }];
         })
   },
   {
@@ -56,7 +56,7 @@ export const routes: Routes = [
         .then((m) => m.ROUTES ?? m.routes ?? [])
         .catch((err) => {
           console.error('Nao foi possivel carregar pacientes', err);
-          return [ { path: '', component: ErrorComponent } ];
+          return [{ path: '**', component: ErrorComponent }];
         })
   },
   { path: 'cadastro/pacientes', pathMatch: 'full', redirectTo: 'pacientes/cadastro' },
@@ -72,7 +72,7 @@ export const routes: Routes = [
         .then((m) => m.ROUTES ?? m.routes ?? [])
         .catch((err) => {
           console.error('Nao foi possivel carregar o cadastro de procedimentos', err);
-          return [ { path: '', component: ErrorComponent } ];
+          return [{ path: '**', component: ErrorComponent }];
         })
   }
 ];
