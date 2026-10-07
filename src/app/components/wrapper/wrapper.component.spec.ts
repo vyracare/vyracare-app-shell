@@ -130,6 +130,41 @@ describe('WrapperComponent', () => {
     expect(navigateSpy).toHaveBeenNthCalledWith(2, '/dashboard');
   });
 
+  it('should suggest matching destinations while the user types', () => {
+    const fixture = TestBed.createComponent(WrapperComponent);
+    fixture.detectChanges();
+    const component = fixture.componentInstance;
+
+    component.handleSearchChange('paciente');
+
+    expect(component['searchSuggestions']().map((item) => item.id)).toEqual(['patients', 'new-patient']);
+  });
+
+  it('should open the complete search page when Enter is pressed', () => {
+    const fixture = TestBed.createComponent(WrapperComponent);
+    fixture.detectChanges();
+    const component = fixture.componentInstance;
+    const navigateSpy = jest.spyOn(router, 'navigate').mockResolvedValue(true);
+
+    component.handleSearchSubmit(' paciente ');
+
+    expect(navigateSpy).toHaveBeenCalledWith(['/busca'], { queryParams: { q: 'paciente' } });
+  });
+
+  it('should navigate directly when an autocomplete suggestion is selected', () => {
+    const fixture = TestBed.createComponent(WrapperComponent);
+    fixture.detectChanges();
+    const component = fixture.componentInstance;
+    const navigateSpy = jest.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
+
+    component.handleSearchSuggestion({ id: 'new-patient', label: 'Novo paciente' });
+    component.handleSearchSuggestion({ id: 'unknown', label: 'Desconhecido' });
+
+    expect(navigateSpy).toHaveBeenCalledTimes(1);
+    expect(navigateSpy).toHaveBeenCalledWith('/pacientes/cadastro');
+    expect(component['searchValue']()).toBe('');
+  });
+
   it('should open and close the responsive navigation drawer', () => {
     const fixture = TestBed.createComponent(WrapperComponent);
     fixture.detectChanges();

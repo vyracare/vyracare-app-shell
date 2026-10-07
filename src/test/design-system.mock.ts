@@ -120,7 +120,9 @@ export class VcNavbarComponent {
   @Input() brandAccent = '';
   @Input() brandSubtitle = '';
   @Input() logoClickable = false;
+  @Input() searchPlaceholder = '';
   @Input() searchValue = '';
+  @Input() searchSuggestions: Array<{ id: string; label: string; description?: string; icon?: string }> = [];
   @Input() notifications: unknown[] = [];
   @Input() profileName = '';
   @Input() profileRole = '';
@@ -128,6 +130,7 @@ export class VcNavbarComponent {
   @Input() profileActions: unknown[] = [];
   @Output() searchChange = new EventEmitter<string>();
   @Output() searchSubmitted = new EventEmitter<string>();
+  @Output() searchSuggestionSelected = new EventEmitter<{ id: string; label: string; description?: string; icon?: string }>();
   @Output() logoClicked = new EventEmitter<void>();
   @Output() profileActionSelected = new EventEmitter<unknown>();
 }

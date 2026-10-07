@@ -4,7 +4,9 @@
     brandAccent="Care"
     brandSubtitle="Gestao integrada para clinicas e profissionais de saude"
     [logoClickable]="true"
+    searchPlaceholder="Busque por páginas, pacientes ou procedimentos"
     [searchValue]="searchValue()"
+    [searchSuggestions]="searchSuggestions()"
     [notifications]="notifications"
     [profileName]="userDisplayName"
     [profileRole]="userAccessLevel"
@@ -12,6 +14,7 @@
     [profileActions]="profileActions"
     (searchChange)="handleSearchChange($event)"
     (searchSubmitted)="handleSearchSubmit($event)"
+    (searchSuggestionSelected)="handleSearchSuggestion($event)"
     (logoClicked)="navigateToRoot()"
     (profileActionSelected)="handleProfileAction($event)"
   ></vc-navbar>

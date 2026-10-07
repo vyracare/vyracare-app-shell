@@ -7,6 +7,7 @@ import { FirstAccessComponent } from './pages/first-access/first-access.componen
 import { ForgotPasswordComponent } from './pages/forgot-password/forgot-password.component';
 import { ErrorComponent } from './pages/error/error.component';
 import { environment } from '../environments/environments';
+import { SearchResultsComponent } from './pages/search-results/search-results.component';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
@@ -14,6 +15,7 @@ export const routes: Routes = [
   { path: 'register', component: RegisterComponent },
   { path: 'first-access', component: FirstAccessComponent },
   { path: 'forgot-password', component: ForgotPasswordComponent },
+  { path: 'busca', component: SearchResultsComponent, canActivate: [AuthGuard] },
   {
     path: 'dashboard',
     canActivate: [AuthGuard],

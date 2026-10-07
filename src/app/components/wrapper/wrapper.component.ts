@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, HostListener, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, HostListener, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NavigationEnd, Router, RouterOutlet, type Route } from '@angular/router';
 import { filter } from 'rxjs';
@@ -9,6 +9,7 @@ import {
   VcSidebarComponent,
   type VcNavbarAction,
   type VcNotificationItem,
+  type VcNavbarSearchSuggestion,
   type VcSidebarGroup,
   type VcSidebarItem,
   type VcSidebarSupport
@@ -16,6 +17,7 @@ import {
 
 import { AuthService } from '../../services/auth/auth.service';
 import { MobileBottomNavigationComponent } from '../mobile-bottom-navigation/mobile-bottom-navigation.component';
+import { NavigationSearchService } from '../../services/navigation-search/navigation-search.service';
 
 type ShellSidebarBlueprint = {
   label: string;
@@ -91,6 +93,14 @@ export class WrapperComponent {
   protected readonly userInitials: string;
   protected readonly userAccessLevel: string;
   protected readonly searchValue = signal('');
+  protected readonly searchSuggestions = computed<VcNavbarSearchSuggestion[]>(() =>
+    this.navigationSearch.search(this.searchValue(), 5).map(({ id, label, description, icon }) => ({
+      id,
+      label,
+      description,
+      icon
+    }))
+  );
   protected readonly currentUrl = signal('/');
   /** Controls the responsive navigation drawer without affecting the desktop sidebar. */
   protected readonly mobileMenuOpen = signal(false);
@@ -104,6 +114,7 @@ export class WrapperComponent {
   constructor(
     private readonly authService: AuthService,
     private readonly router: Router,
+    private readonly navigationSearch: NavigationSearchService,
     destroyRef: DestroyRef
   ) {
     this.userDisplayName = this.authService.getUserDisplayName();
@@ -145,7 +156,22 @@ export class WrapperComponent {
 
   /** Confirms the search interaction and keeps the latest term visible. */
   handleSearchSubmit(value: string): void {
-    this.searchValue.set(value);
+    const query = value.trim();
+    this.searchValue.set(query);
+    if (query) {
+      void this.router.navigate(['/busca'], { queryParams: { q: query } });
+    }
+  }
+
+  /** Routes directly to an autocomplete destination. */
+  handleSearchSuggestion(suggestion: VcNavbarSearchSuggestion): void {
+    const destination = this.navigationSearch.findById(suggestion.id);
+    if (!destination) {
+      return;
+    }
+
+    this.searchValue.set('');
+    void this.router.navigateByUrl(destination.path);
   }
 
   /** Routes the user to the application root, which redirects to the dashboard. */
