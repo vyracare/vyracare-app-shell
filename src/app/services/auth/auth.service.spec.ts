@@ -59,7 +59,12 @@ describe('AuthService', () => {
   });
 
   it('should perform register request', () => {
-    const payload = { fullName: 'User Name', email: 'user@example.com', password: 'secret' };
+    const payload = {
+      fullName: 'User Name',
+      email: 'user@example.com',
+      password: 'secret',
+      organization: { legalName: 'Clinica A' }
+    };
 
     service.register(payload).subscribe();
 

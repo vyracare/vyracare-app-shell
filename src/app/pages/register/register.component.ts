@@ -34,7 +34,10 @@ export class RegisterComponent {
     this.form = this.fb.group({
       fullName: ['', [Validators.required]],
       email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(6)]]
+      password: ['', [Validators.required, Validators.minLength(6)]],
+      legalName: ['', [Validators.required]],
+      tradeName: [''],
+      document: ['']
     });
   }
 
@@ -45,15 +48,30 @@ export class RegisterComponent {
     this.loading = true;
     this.error = null;
 
-    const { fullName, email, password } = this.form.value;
+    const { fullName, email, password, legalName, tradeName, document } = this.form.value;
 
-    this.authService.register({ fullName, email, password }).pipe(
+    this.authService.register({
+      fullName,
+      email,
+      password,
+      organization: {
+        legalName,
+        tradeName: tradeName || undefined,
+        document: document || undefined
+      }
+    }).pipe(
       finalize(() => {
         this.loading = false;
       })
     ).subscribe({
-      next: () => {
-        this.toast.success('Conta criada', 'Seu cadastro foi concluido com sucesso.');
+      next: (response) => {
+        if (response?.token) {
+          this.authService.saveToken(response.token);
+          this.toast.success('Empresa criada', 'Seu teste gratuito de 30 dias comecou agora.');
+          this.router.navigate(['/dashboard']);
+          return;
+        }
+        this.toast.success('Conta criada', 'Seu cadastro foi concluido. Entre para continuar.');
         this.goToLogin();
       },
       error: (err) => {
@@ -103,6 +121,14 @@ export class RegisterComponent {
 
     if (normalized === 'email is required') {
       return 'Informe um e-mail valido para concluir o cadastro.';
+    }
+
+    if (normalized === 'organization legal name is required') {
+      return 'Informe a razao social ou o nome do profissional.';
+    }
+
+    if (normalized === 'tenant provisioning failed' || normalized === 'tenant provisioning is unavailable') {
+      return 'Nao foi possivel criar sua empresa agora. Tente novamente em alguns instantes.';
     }
 
     return 'Nao foi possivel concluir o cadastro. Revise os dados e tente novamente.';
