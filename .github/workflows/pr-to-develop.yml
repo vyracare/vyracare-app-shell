@@ -93,5 +93,5 @@ jobs:
           destination_branch: develop
           pr_title: "PR automatic ${{ github.ref_name }} into develop"
           pr_body: |
-            PR automática criada pelo pipeline.
+            PR automatica criada pelo pipeline.
             Branch de origem: `${{ github.ref_name }}`
