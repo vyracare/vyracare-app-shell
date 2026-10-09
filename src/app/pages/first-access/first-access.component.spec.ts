@@ -158,7 +158,7 @@ describe('FirstAccessComponent', () => {
     component.passwordForm.setValue({ password: 'secret1' });
     component.setPassword();
 
-    expect(component.error()).toBe('Falha');
+    expect(component.error()).toBe('Falha ao definir a senha. Tente novamente.');
     expect(component.loading()).toBe(false);
   });
 

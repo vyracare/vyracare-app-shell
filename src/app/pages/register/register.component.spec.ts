@@ -51,26 +51,67 @@ describe('RegisterComponent', () => {
     expect(component.loading).toBe(false);
   });
 
-  it('should call authService.register and navigate to login on submit', () => {
+  it('should provision the company, save the token and navigate to dashboard', () => {
     const fixture = TestBed.createComponent(RegisterComponent);
     const component = fixture.componentInstance;
-    const dto = { fullName: 'User Name', email: 'user@example.com', password: 'P@ssw0rd' };
+    const dto = { fullName: 'User Name', email: 'user@example.com', password: 'P@ssw0rd', legalName: 'Clinica A', tradeName: '', document: '' };
 
-    authService.register.mockReturnValue(of({}));
+    authService.register.mockReturnValue(of({ token: 'tenant-token' }));
 
     component.form.setValue(dto);
     component.onSubmit();
 
-    expect(authService.register).toHaveBeenCalledWith(dto);
-    expect(navigateMock).toHaveBeenCalledWith(['/login']);
+    expect(authService.register).toHaveBeenCalledWith({
+      fullName: dto.fullName,
+      email: dto.email,
+      password: dto.password,
+      organization: { legalName: dto.legalName, tradeName: undefined, document: undefined }
+    });
+    expect(authService.saveToken).toHaveBeenCalledWith('tenant-token');
+    expect(navigateMock).toHaveBeenCalledWith(['/dashboard']);
     expect(component.loading).toBe(false);
     expect(component.error).toBeNull();
+  });
+
+  it('should navigate to login when a legacy response has no token', () => {
+    const fixture = TestBed.createComponent(RegisterComponent);
+    const component = fixture.componentInstance;
+    component.form.setValue({
+      fullName: 'User Name', email: 'user@example.com', password: 'P@ssw0rd',
+      legalName: 'Clinica A', tradeName: '', document: ''
+    });
+    authService.register.mockReturnValue(of({}));
+
+    component.onSubmit();
+
+    expect(navigateMock).toHaveBeenCalledWith(['/login']);
+  });
+
+  it.each([
+    ['Organization legal name is required', 'razao social'],
+    ['Tenant provisioning failed', 'criar sua empresa'],
+    ['Tenant provisioning is unavailable', 'criar sua empresa']
+  ])('should translate onboarding error %s', (backendMessage, expectedText) => {
+    const fixture = TestBed.createComponent(RegisterComponent);
+    const component = fixture.componentInstance;
+    component.form.setValue({
+      fullName: 'User Name', email: 'user@example.com', password: 'P@ssw0rd',
+      legalName: 'Clinica A', tradeName: '', document: ''
+    });
+    authService.register.mockReturnValue(throwError(() => new HttpErrorResponse({
+      status: 400,
+      error: { message: backendMessage }
+    })));
+
+    component.onSubmit();
+
+    expect(component.error).toContain(expectedText);
   });
 
   it('should handle register errors', () => {
     const fixture = TestBed.createComponent(RegisterComponent);
     const component = fixture.componentInstance;
-    const dto = { fullName: 'User Name', email: 'user@example.com', password: 'P@ssw0rd' };
+    const dto = { fullName: 'User Name', email: 'user@example.com', password: 'P@ssw0rd', legalName: 'Clinica A', tradeName: '', document: '' };
     const backendError = new HttpErrorResponse({
       status: 409,
       error: { message: 'User already exists' }
@@ -81,7 +122,10 @@ describe('RegisterComponent', () => {
     component.form.setValue(dto);
     component.onSubmit();
 
-    expect(authService.register).toHaveBeenCalledWith(dto);
+    expect(authService.register).toHaveBeenCalledWith(expect.objectContaining({
+      email: dto.email,
+      organization: expect.objectContaining({ legalName: dto.legalName })
+    }));
     expect(navigateMock).not.toHaveBeenCalled();
     expect(component.loading).toBe(false);
     expect(component.error).toBe('Ja existe uma conta para este e-mail. Acesse sua conta ou utilize outro e-mail.');
@@ -90,7 +134,7 @@ describe('RegisterComponent', () => {
   it('should use fallback message when register error has no backend message', () => {
     const fixture = TestBed.createComponent(RegisterComponent);
     const component = fixture.componentInstance;
-    const dto = { fullName: 'User Name', email: 'user@example.com', password: 'P@ssw0rd' };
+    const dto = { fullName: 'User Name', email: 'user@example.com', password: 'P@ssw0rd', legalName: 'Clinica A', tradeName: '', document: '' };
 
     authService.register.mockReturnValue(throwError(() => ({})));
 

@@ -26,7 +26,8 @@ describe('App', () => {
           useValue: {
             logout: jest.fn(),
             getUserDisplayName: jest.fn().mockReturnValue('Test User'),
-            getUserInitials: jest.fn().mockReturnValue('TU')
+            getUserInitials: jest.fn().mockReturnValue('TU'),
+            getUserAccessLevel: jest.fn().mockReturnValue('Administrador')
           }
         }
       ]
@@ -36,6 +37,13 @@ describe('App', () => {
   it('should create the app', () => {
     const fixture = TestBed.createComponent(App);
     expect(fixture.componentInstance).toBeTruthy();
+  });
+
+  it('should keep the global toast viewport mounted for every route', () => {
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('vc-toast-container')).not.toBeNull();
   });
 
   it('should render wrapper shell for protected routes', () => {

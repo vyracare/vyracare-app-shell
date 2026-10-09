@@ -2,7 +2,7 @@ import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { VcButtonComponent, VcInputComponent } from '@vyracare/design-system';
+import { VcButtonComponent, VcInputComponent, VcToastService } from '@vyracare/design-system';
 import { AuthService } from '../../services/auth/auth.service';
 
 @Component({
@@ -12,6 +12,7 @@ import { AuthService } from '../../services/auth/auth.service';
   templateUrl: './first-access.component.html',
   styleUrls: ['./first-access.component.scss']
 })
+/** Coordena a validacao do primeiro acesso e a definicao segura da senha. */
 export class FirstAccessComponent {
   emailForm: FormGroup;
   passwordForm: FormGroup;
@@ -24,7 +25,8 @@ export class FirstAccessComponent {
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private toast: VcToastService
   ) {
     this.emailForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]]
@@ -35,7 +37,8 @@ export class FirstAccessComponent {
     });
   }
 
-  private setEmailControlEnabled(enabled: boolean) {
+  /** Alterna a edicao do e-mail durante as etapas do primeiro acesso. */
+  private setEmailControlEnabled(enabled: boolean): void {
     const control = this.emailForm.get('email');
     if (!control) return;
     if (enabled) {
@@ -45,7 +48,8 @@ export class FirstAccessComponent {
     }
   }
 
-  checkEmail() {
+  /** Confirma pela API se o e-mail pode definir a senha inicial. */
+  checkEmail(): void {
     if (this.emailForm.invalid) return;
 
     this.loading.set(true);
@@ -77,12 +81,15 @@ export class FirstAccessComponent {
       },
       error: () => {
         this.loading.set(false);
-        this.error.set('Falha ao validar o email. Tente novamente.');
+        const message = 'Falha ao validar o email. Tente novamente.';
+        this.error.set(message);
+        this.toast.error('Nao foi possivel validar o email', message);
       }
     });
   }
 
-  setPassword() {
+  /** Persiste a senha inicial e notifica o resultado da requisicao. */
+  setPassword(): void {
     if (this.passwordForm.invalid || !this.checkedEmail) return;
 
     this.loading.set(true);
@@ -97,15 +104,19 @@ export class FirstAccessComponent {
         this.canSetPassword.set(false);
         this.setEmailControlEnabled(true);
         this.passwordForm.reset();
+        this.toast.success('Senha definida', 'Seu primeiro acesso foi configurado com sucesso.');
       },
-      error: (err) => {
+      error: () => {
         this.loading.set(false);
-        this.error.set(err?.error || 'Falha ao definir a senha. Tente novamente.');
+        const message = 'Falha ao definir a senha. Tente novamente.';
+        this.error.set(message);
+        this.toast.error('Nao foi possivel definir a senha', message);
       }
     });
   }
 
-  goToLogin() {
+  /** Retorna o usuario para a tela de autenticacao. */
+  goToLogin(): void {
     this.router.navigate(['/login']);
   }
 }

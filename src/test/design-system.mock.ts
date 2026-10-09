@@ -1,4 +1,4 @@
-import { Component, EventEmitter, forwardRef, Input, Output } from '@angular/core';
+import { Component, EventEmitter, forwardRef, Injectable, Input, Output } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 
 @Component({
@@ -99,6 +99,18 @@ export class VcTextComponent {
 }
 
 @Component({
+  selector: 'vc-icon',
+  standalone: true,
+  template: '<span [attr.aria-label]="ariaLabel || null"></span>'
+})
+export class VcIconComponent {
+  @Input() name = '';
+  @Input() size: string | number = 'md';
+  @Input() ariaLabel = '';
+  @Input() decorative = true;
+}
+
+@Component({
   selector: 'vc-navbar',
   standalone: true,
   template: ''
@@ -108,7 +120,9 @@ export class VcNavbarComponent {
   @Input() brandAccent = '';
   @Input() brandSubtitle = '';
   @Input() logoClickable = false;
+  @Input() searchPlaceholder = '';
   @Input() searchValue = '';
+  @Input() searchSuggestions: Array<{ id: string; label: string; description?: string; icon?: string }> = [];
   @Input() notifications: unknown[] = [];
   @Input() profileName = '';
   @Input() profileRole = '';
@@ -116,6 +130,7 @@ export class VcNavbarComponent {
   @Input() profileActions: unknown[] = [];
   @Output() searchChange = new EventEmitter<string>();
   @Output() searchSubmitted = new EventEmitter<string>();
+  @Output() searchSuggestionSelected = new EventEmitter<{ id: string; label: string; description?: string; icon?: string }>();
   @Output() logoClicked = new EventEmitter<void>();
   @Output() profileActionSelected = new EventEmitter<unknown>();
 }
@@ -130,4 +145,19 @@ export class VcSidebarComponent {
   @Input() activeItemId = '';
   @Input() support: unknown = null;
   @Output() itemSelected = new EventEmitter<unknown>();
+}
+
+@Component({
+  selector: 'vc-toast-container',
+  standalone: true,
+  template: '<div data-testid="toast-container"></div>'
+})
+export class VcToastContainerComponent {}
+
+@Injectable({ providedIn: 'root' })
+export class VcToastService {
+  success(_title: string, _message?: string): string { return 'toast-success'; }
+  error(_title: string, _message?: string): string { return 'toast-error'; }
+  warning(_title: string, _message?: string): string { return 'toast-warning'; }
+  info(_title: string, _message?: string): string { return 'toast-info'; }
 }

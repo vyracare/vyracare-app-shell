@@ -1,19 +1,23 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, HostListener, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NavigationEnd, Router, RouterOutlet, type Route } from '@angular/router';
 import { filter } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   VcNavbarComponent,
+  VcIconComponent,
   VcSidebarComponent,
   type VcNavbarAction,
   type VcNotificationItem,
+  type VcNavbarSearchSuggestion,
   type VcSidebarGroup,
   type VcSidebarItem,
   type VcSidebarSupport
 } from '@vyracare/design-system';
 
 import { AuthService } from '../../services/auth/auth.service';
+import { MobileBottomNavigationComponent } from '../mobile-bottom-navigation/mobile-bottom-navigation.component';
+import { NavigationSearchService } from '../../services/navigation-search/navigation-search.service';
 
 type ShellSidebarBlueprint = {
   label: string;
@@ -29,7 +33,8 @@ const SHELL_SIDEBAR_BLUEPRINT: ShellSidebarBlueprint[] = [
     label: 'Area Clinica',
     items: [
       { path: 'dashboard', label: 'Dashboard', icon: 'grid-1x2' },
-      { path: 'cadastro/pacientes', label: 'Pacientes', icon: 'people' }
+      { path: 'dashboard/agenda', label: 'Atendimentos', icon: 'calendar-event' },
+      { path: 'pacientes', label: 'Pacientes', icon: 'people' }
     ]
   },
   {
@@ -44,7 +49,14 @@ const SHELL_SIDEBAR_BLUEPRINT: ShellSidebarBlueprint[] = [
 @Component({
   selector: 'vyracare-wrapper',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, VcNavbarComponent, VcSidebarComponent],
+  imports: [
+    CommonModule,
+    RouterOutlet,
+    VcNavbarComponent,
+    VcIconComponent,
+    VcSidebarComponent,
+    MobileBottomNavigationComponent
+  ],
   templateUrl: './wrapper.component.html',
   styleUrls: ['./wrapper.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -79,17 +91,35 @@ export class WrapperComponent {
   };
   protected readonly userDisplayName: string;
   protected readonly userInitials: string;
+  protected readonly userAccessLevel: string;
   protected readonly searchValue = signal('');
+  protected readonly searchSuggestions = computed<VcNavbarSearchSuggestion[]>(() =>
+    this.navigationSearch.search(this.searchValue(), 5).map(({ id, label, description, icon }) => ({
+      id,
+      label,
+      description,
+      icon
+    }))
+  );
   protected readonly currentUrl = signal('/');
+  /** Controls the responsive navigation drawer without affecting the desktop sidebar. */
+  protected readonly mobileMenuOpen = signal(false);
   protected readonly sidebarGroups: VcSidebarGroup[];
+  protected readonly mobileNavigationItems: VcSidebarItem[] = [
+    { id: 'dashboard', label: 'Início', icon: 'grid-1x2' },
+    { id: 'dashboard/agenda', label: 'Agenda', icon: 'calendar-event' },
+    { id: 'pacientes', label: 'Pacientes', icon: 'people' }
+  ];
 
   constructor(
     private readonly authService: AuthService,
     private readonly router: Router,
+    private readonly navigationSearch: NavigationSearchService,
     destroyRef: DestroyRef
   ) {
     this.userDisplayName = this.authService.getUserDisplayName();
     this.userInitials = this.authService.getUserInitials();
+    this.userAccessLevel = this.authService.getUserAccessLevel();
     this.sidebarGroups = this.buildSidebarGroups(this.router.config);
     this.syncCurrentUrl();
 
@@ -104,11 +134,19 @@ export class WrapperComponent {
   /** Active sidebar item derived from the current route tree. */
   protected get activeSidebarItemId(): string {
     const currentPath = this.currentUrl();
-    const activeItem = this.sidebarGroups
-      .flatMap((group) => group.items)
-      .find((item) => currentPath === item.id || currentPath.startsWith(`${item.id}/`));
+    const items = this.sidebarGroups.flatMap((group) => group.items);
+    const activeItem =
+      items.find((item) => currentPath === item.id) ??
+      items
+        .filter((item) => currentPath.startsWith(`${item.id}/`))
+        .sort((left, right) => right.id.length - left.id.length)[0];
 
     return activeItem?.id ?? '';
+  }
+
+  /** Highlights the mobile menu tab while a secondary registration route is active. */
+  protected get mobileMenuContainsActiveRoute(): boolean {
+    return this.activeSidebarItemId.startsWith('cadastro/');
   }
 
   /** Keeps the search field state in sync with the navbar output. */
@@ -118,7 +156,22 @@ export class WrapperComponent {
 
   /** Confirms the search interaction and keeps the latest term visible. */
   handleSearchSubmit(value: string): void {
-    this.searchValue.set(value);
+    const query = value.trim();
+    this.searchValue.set(query);
+    if (query) {
+      void this.router.navigate(['/busca'], { queryParams: { q: query } });
+    }
+  }
+
+  /** Routes directly to an autocomplete destination. */
+  handleSearchSuggestion(suggestion: VcNavbarSearchSuggestion): void {
+    const destination = this.navigationSearch.findById(suggestion.id);
+    if (!destination) {
+      return;
+    }
+
+    this.searchValue.set('');
+    void this.router.navigateByUrl(destination.path);
   }
 
   /** Routes the user to the application root, which redirects to the dashboard. */
@@ -128,7 +181,24 @@ export class WrapperComponent {
 
   /** Routes the user according to the selected sidebar item. */
   selectSidebarItem(item: VcSidebarItem): void {
+    this.closeMobileMenu();
     void this.router.navigateByUrl(`/${item.id}`);
+  }
+
+  /** Opens or closes the responsive navigation drawer. */
+  toggleMobileMenu(): void {
+    this.mobileMenuOpen.update((open) => !open);
+  }
+
+  /** Closes the responsive navigation drawer and restores the page context. */
+  closeMobileMenu(): void {
+    this.mobileMenuOpen.set(false);
+  }
+
+  /** Lets keyboard users dismiss the responsive drawer with Escape. */
+  @HostListener('document:keydown.escape')
+  handleEscape(): void {
+    this.closeMobileMenu();
   }
 
   /** Executes shell profile actions. */
@@ -144,7 +214,7 @@ export class WrapperComponent {
       .map((group) => ({
         label: group.label,
         items: group.items
-          .filter((item) => routes.some((route) => route.path === item.path))
+          .filter((item) => routes.some((route) => route.path === item.path || route.path === item.path.split('/')[0]))
           .map((item) => ({
             id: item.path,
             label: item.label,
@@ -156,6 +226,7 @@ export class WrapperComponent {
 
   /** Normalizes the current URL so sidebar matching stays stable. */
   private syncCurrentUrl(): void {
-    this.currentUrl.set(this.router.url.split('?')[0]);
+    this.currentUrl.set(this.router.url.split('?')[0].replace(/^\/+|\/+$/g, ''));
+    this.closeMobileMenu();
   }
 }
