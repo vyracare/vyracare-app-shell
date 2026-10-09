@@ -58,7 +58,7 @@ export class LoginComponent {
         }
 
         this.authService.saveToken(token);
-        this.router.navigate(['/dashboard']);
+        this.router.navigate([this.authService.hasTenantContext(token) ? '/dashboard' : '/onboarding/empresa']);
       },
       error: () => {
         this.loading = false;

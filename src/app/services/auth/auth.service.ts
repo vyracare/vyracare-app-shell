@@ -26,6 +26,18 @@ export class AuthService {
     return this.http.post(`${this.apiUrl}/register`, data);
   }
 
+  createOrganization(data: { legalName: string; tradeName?: string; document?: string }): Observable<any> {
+    return this.http.post(`${this.apiUrl}/organization`, data);
+  }
+
+  hasTenantContext(token = this.getToken()): boolean {
+    if (!token) return false;
+    const payload = this.readJwtPayload(token);
+    return typeof payload?.['tenant_id'] === 'string'
+      && typeof payload?.['membership_id'] === 'string'
+      && typeof payload?.['tenant_role'] === 'string';
+  }
+
   checkFirstAccess(email: string): Observable<{ exists: boolean; canSetPassword: boolean }> {
     return this.http.post<{ exists: boolean; canSetPassword: boolean }>(`${this.apiUrl}/first-access/check`, { email });
   }

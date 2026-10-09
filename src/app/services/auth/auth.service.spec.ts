@@ -74,6 +74,24 @@ describe('AuthService', () => {
     req.flush({ token: 'any' });
   });
 
+  it('should perform create organization request', () => {
+    const payload = { legalName: 'Clinica A', tradeName: 'Viver Bem' };
+    service.createOrganization(payload).subscribe();
+    const req = httpMock.expectOne(`${environment.apiUrl}/organization`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual(payload);
+    req.flush({ token: 'owner-token' });
+  });
+
+  it('should identify complete tenant context', () => {
+    const token = createTokenWithPayload({
+      tenant_id: 'tenant-a', membership_id: 'membership-a', tenant_role: 'Owner'
+    });
+    expect(service.hasTenantContext(token)).toBe(true);
+    expect(service.hasTenantContext(createTokenWithPayload({ tenant_id: 'tenant-a' }))).toBe(false);
+    expect(service.hasTenantContext(null)).toBe(false);
+  });
+
   it('should perform first access check request', () => {
     const email = 'user@example.com';
 
