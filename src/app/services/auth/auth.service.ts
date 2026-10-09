@@ -17,8 +17,25 @@ export class AuthService {
     return this.http.post(`${this.apiUrl}/login`, credentials);
   }
 
-  register(data: { fullName?: string; email: string; password: string }): Observable<any> {
+  register(data: {
+    fullName?: string;
+    email: string;
+    password: string;
+    organization: { legalName: string; tradeName?: string; document?: string };
+  }): Observable<any> {
     return this.http.post(`${this.apiUrl}/register`, data);
+  }
+
+  createOrganization(data: { legalName: string; tradeName?: string; document?: string }): Observable<any> {
+    return this.http.post(`${this.apiUrl}/organization`, data);
+  }
+
+  hasTenantContext(token = this.getToken()): boolean {
+    if (!token) return false;
+    const payload = this.readJwtPayload(token);
+    return typeof payload?.['tenant_id'] === 'string'
+      && typeof payload?.['membership_id'] === 'string'
+      && typeof payload?.['tenant_role'] === 'string';
   }
 
   checkFirstAccess(email: string): Observable<{ exists: boolean; canSetPassword: boolean }> {
@@ -85,6 +102,20 @@ export class AuthService {
 
   getUserInitials(): string {
     return this.buildInitials(this.getUserDisplayName());
+  }
+
+  /** Returns the access level issued by the authentication API for the current session. */
+  getUserAccessLevel(): string {
+    const payload = this.getJwtPayload();
+    const accessLevel = payload?.['access_level']
+      ?? payload?.['role']
+      ?? payload?.['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
+
+    if (typeof accessLevel === 'string' && accessLevel.trim()) {
+      return accessLevel.trim();
+    }
+
+    return 'Perfil nao informado';
   }
 
   isAuthenticated(): boolean {

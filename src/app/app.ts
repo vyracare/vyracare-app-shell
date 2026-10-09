@@ -4,11 +4,12 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { VcToastContainerComponent } from '@vyracare/design-system';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, WrapperComponent, RouterOutlet],
+  imports: [CommonModule, WrapperComponent, RouterOutlet, VcToastContainerComponent],
   templateUrl: './app.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
@@ -28,7 +29,7 @@ export class App {
     this.updateShellVisibility();
   }
 
-  private updateShellVisibility() {
+  private updateShellVisibility(): void {
     const currentUrl = this.router.url.split('?')[0];
     this.shellVisible.set(!this.authRoutes.includes(currentUrl));
   }

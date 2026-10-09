@@ -2,7 +2,7 @@ import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { VcButtonComponent } from '@vyracare/design-system';
+import { VcButtonComponent, VcToastService } from '@vyracare/design-system';
 import { AuthService } from '../../services/auth/auth.service';
 
 @Component({
@@ -12,6 +12,7 @@ import { AuthService } from '../../services/auth/auth.service';
   templateUrl: './forgot-password.component.html',
   styleUrls: ['./forgot-password.component.scss']
 })
+/** Coordena a redefinicao de senha e os feedbacks globais da operacao. */
 export class ForgotPasswordComponent {
   form: FormGroup;
   loading = signal(false);
@@ -21,7 +22,8 @@ export class ForgotPasswordComponent {
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private toast: VcToastService
   ) {
     this.form = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
@@ -29,7 +31,8 @@ export class ForgotPasswordComponent {
     });
   }
 
-  onSubmit() {
+  /** Valida e envia a nova senha, limpando o formulario depois do sucesso. */
+  onSubmit(): void {
     if (this.form.invalid) return;
 
     this.loading.set(true);
@@ -44,15 +47,19 @@ export class ForgotPasswordComponent {
         this.loading.set(false);
         this.success.set(true);
         this.form.reset();
+        this.toast.success('Senha atualizada', 'A nova senha foi salva com sucesso.');
       },
-      error: (err) => {
+      error: () => {
         this.loading.set(false);
-        this.error.set(err?.error || 'Falha ao atualizar a senha. Tente novamente.');
+        const message = 'Falha ao atualizar a senha. Tente novamente.';
+        this.error.set(message);
+        this.toast.error('Nao foi possivel atualizar a senha', message);
       }
     });
   }
 
-  goToLogin() {
+  /** Retorna o usuario para a tela de autenticacao. */
+  goToLogin(): void {
     this.router.navigate(['/login']);
   }
 }
