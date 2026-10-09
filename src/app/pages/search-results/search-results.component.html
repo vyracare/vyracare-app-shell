@@ -1,0 +1,36 @@
+<section class="search-results" aria-labelledby="search-results-title">
+  <nav class="search-results__breadcrumb" aria-label="Navegação estrutural">
+    <a routerLink="/dashboard">Dashboard</a>
+    <span aria-hidden="true">/</span>
+    <span>Busca</span>
+  </nav>
+
+  <header class="search-results__header">
+    <span class="search-results__eyebrow">BUSCA GLOBAL</span>
+    <h1 id="search-results-title">Resultados para “{{ query() }}”</h1>
+    <p>Selecione uma opção para continuar no sistema.</p>
+  </header>
+
+  @if (results().length) {
+    <div class="search-results__list" aria-live="polite">
+      @for (result of results(); track result.id) {
+        <a class="search-results__item" [routerLink]="result.path">
+          <span class="search-results__icon">
+            <vc-icon [name]="result.icon" size="md" [decorative]="true"></vc-icon>
+          </span>
+          <span class="search-results__content">
+            <strong>{{ result.label }}</strong>
+            <small>{{ result.description }}</small>
+          </span>
+          <vc-icon name="arrow-right" size="md" [decorative]="true"></vc-icon>
+        </a>
+      }
+    </div>
+  } @else {
+    <div class="search-results__empty" role="status">
+      <vc-icon name="search" size="lg" [decorative]="true"></vc-icon>
+      <strong>Nenhuma opção encontrada</strong>
+      <p>Tente buscar por agenda, paciente, funcionário ou procedimento.</p>
+    </div>
+  }
+</section>

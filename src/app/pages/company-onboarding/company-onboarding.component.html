@@ -1,0 +1,44 @@
+<main class="onboarding-page">
+  <section class="onboarding-card">
+    <div class="brand">VyraCare</div>
+    <span class="eyebrow">Ultima etapa</span>
+    <h1>Cadastre sua empresa</h1>
+    <p class="description">
+      Estes dados criam seu espaco exclusivo. Voce sera o proprietario e administrador e tera 30 dias gratis.
+    </p>
+
+    <form [formGroup]="form" (ngSubmit)="submit()">
+      <vc-input
+        id="company-legal-name"
+        label="Razao social ou nome profissional"
+        formControlName="legalName"
+        placeholder="Ex.: Clinica Viver Bem"
+        [error]="form.controls['legalName'].invalid && form.controls['legalName'].touched ? 'Este campo e obrigatorio' : ''"
+      ></vc-input>
+      <vc-input
+        id="company-trade-name"
+        label="Nome fantasia (opcional)"
+        formControlName="tradeName"
+        placeholder="Nome exibido no Vyracare"
+      ></vc-input>
+      <vc-input
+        id="company-document"
+        label="CNPJ (opcional)"
+        formControlName="document"
+        placeholder="00.000.000/0000-00"
+      ></vc-input>
+
+      @if (error) {
+        <p class="error-message" role="alert">{{ error }}</p>
+      }
+
+      <vc-button type="submit" full [loading]="loading" [disabled]="loading || form.invalid">
+        {{ loading ? 'Criando empresa...' : 'Criar empresa e continuar' }}
+      </vc-button>
+      <vc-button type="button" variant="ghost" full [disabled]="loading" (click)="logout()">
+        Sair
+      </vc-button>
+    </form>
+  </section>
+</main>
+

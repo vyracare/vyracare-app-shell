@@ -7,6 +7,8 @@ import { FirstAccessComponent } from './pages/first-access/first-access.componen
 import { ForgotPasswordComponent } from './pages/forgot-password/forgot-password.component';
 import { ErrorComponent } from './pages/error/error.component';
 import { environment } from '../environments/environments';
+import { SearchResultsComponent } from './pages/search-results/search-results.component';
+import { CompanyOnboardingComponent } from './pages/company-onboarding/company-onboarding.component';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
@@ -14,19 +16,21 @@ export const routes: Routes = [
   { path: 'register', component: RegisterComponent },
   { path: 'first-access', component: FirstAccessComponent },
   { path: 'forgot-password', component: ForgotPasswordComponent },
+  { path: 'onboarding/empresa', component: CompanyOnboardingComponent, canActivate: [AuthGuard] },
+  { path: 'busca', component: SearchResultsComponent, canActivate: [AuthGuard] },
   {
     path: 'dashboard',
     canActivate: [AuthGuard],
-    loadComponent: () =>
+    loadChildren: () =>
       loadRemoteModule({
         type: 'module',
         remoteEntry: environment.dashboardRemoteEntry,
-        exposedModule: './App'
+        exposedModule: './Routes'
       })
-        .then((m) => m.App)
+        .then((m) => m.ROUTES ?? m.routes ?? [])
         .catch((err) => {
           console.error('Nao foi possivel carregar o dashboard remoto', err);
-          return ErrorComponent;
+          return [{ path: '**', component: ErrorComponent }];
         })
   },
   {
@@ -41,11 +45,11 @@ export const routes: Routes = [
         .then((m) => m.ROUTES ?? m.routes ?? [])
         .catch((err) => {
           console.error('Nao foi possivel carregar o cadastro de funcionarios', err);
-          return [ { path: '', component: ErrorComponent } ];
+          return [{ path: '**', component: ErrorComponent }];
         })
   },
   {
-    path: 'cadastro/pacientes',
+    path: 'pacientes',
     canActivate: [AuthGuard],
     loadChildren: () =>
       loadRemoteModule({
@@ -55,10 +59,11 @@ export const routes: Routes = [
       })
         .then((m) => m.ROUTES ?? m.routes ?? [])
         .catch((err) => {
-          console.error('Nao foi possivel carregar o cadastro de pacientes', err);
-          return [ { path: '', component: ErrorComponent } ];
+          console.error('Nao foi possivel carregar pacientes', err);
+          return [{ path: '**', component: ErrorComponent }];
         })
   },
+  { path: 'cadastro/pacientes', pathMatch: 'full', redirectTo: 'pacientes/cadastro' },
   {
     path: 'cadastro/procedimentos',
     canActivate: [AuthGuard],
@@ -71,7 +76,7 @@ export const routes: Routes = [
         .then((m) => m.ROUTES ?? m.routes ?? [])
         .catch((err) => {
           console.error('Nao foi possivel carregar o cadastro de procedimentos', err);
-          return [ { path: '', component: ErrorComponent } ];
+          return [{ path: '**', component: ErrorComponent }];
         })
   }
 ];

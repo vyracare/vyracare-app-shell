@@ -15,6 +15,8 @@ describe('LoginComponent', () => {
     authService = {
       login: jest.fn(),
       register: jest.fn(),
+      createOrganization: jest.fn(),
+      hasTenantContext: jest.fn().mockReturnValue(true),
       logout: jest.fn(),
       saveToken: jest.fn(),
       getToken: jest.fn(),
@@ -114,6 +116,19 @@ describe('LoginComponent', () => {
     expect(navigateSpy).toHaveBeenCalledWith(['/dashboard']);
   });
 
+  it('should send users without a tenant to company onboarding', () => {
+    const fixture = TestBed.createComponent(LoginComponent);
+    const component = fixture.componentInstance;
+    authService.login.mockReturnValue(of({ token: 'legacy-token' }));
+    authService.hasTenantContext.mockReturnValue(false);
+
+    component.form.setValue({ email: 'legacy@example.com', password: 'P@ssw0rd' });
+    component.onSubmit();
+
+    expect(authService.saveToken).toHaveBeenCalledWith('legacy-token');
+    expect(navigateSpy).toHaveBeenCalledWith(['/onboarding/empresa']);
+  });
+
   it('should handle login errors', () => {
     const fixture = TestBed.createComponent(LoginComponent);
     const component = fixture.componentInstance;
@@ -128,7 +143,7 @@ describe('LoginComponent', () => {
     expect(authService.login).toHaveBeenCalledWith(credentials);
     expect(navigateSpy).not.toHaveBeenCalled();
     expect(component.loading).toBe(false);
-    expect(component.error).toBe(backendError.error);
+    expect(component.error).toBe('Falha no login. Verifique suas credenciais.');
   });
 
   it('should use fallback message when login error has no backend message', () => {

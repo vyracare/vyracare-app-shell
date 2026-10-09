@@ -59,7 +59,12 @@ describe('AuthService', () => {
   });
 
   it('should perform register request', () => {
-    const payload = { fullName: 'User Name', email: 'user@example.com', password: 'secret' };
+    const payload = {
+      fullName: 'User Name',
+      email: 'user@example.com',
+      password: 'secret',
+      organization: { legalName: 'Clinica A' }
+    };
 
     service.register(payload).subscribe();
 
@@ -67,6 +72,24 @@ describe('AuthService', () => {
     expect(req.request.method).toBe('POST');
     expect(req.request.body).toEqual(payload);
     req.flush({ token: 'any' });
+  });
+
+  it('should perform create organization request', () => {
+    const payload = { legalName: 'Clinica A', tradeName: 'Viver Bem' };
+    service.createOrganization(payload).subscribe();
+    const req = httpMock.expectOne(`${environment.apiUrl}/organization`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual(payload);
+    req.flush({ token: 'owner-token' });
+  });
+
+  it('should identify complete tenant context', () => {
+    const token = createTokenWithPayload({
+      tenant_id: 'tenant-a', membership_id: 'membership-a', tenant_role: 'Owner'
+    });
+    expect(service.hasTenantContext(token)).toBe(true);
+    expect(service.hasTenantContext(createTokenWithPayload({ tenant_id: 'tenant-a' }))).toBe(false);
+    expect(service.hasTenantContext(null)).toBe(false);
   });
 
   it('should perform first access check request', () => {
@@ -196,6 +219,25 @@ describe('AuthService', () => {
 
     expect(service.getUserDisplayName()).toBe('ana.paula@example.com');
     expect(service.getUserInitials()).toBe('AP');
+  });
+
+  it('should resolve the access level from the jwt claims', () => {
+    service.saveToken(createTokenWithPayload({ access_level: '  Administrador  ' }));
+    expect(service.getUserAccessLevel()).toBe('Administrador');
+
+    service.saveToken(createTokenWithPayload({ role: 'Gestor' }));
+    expect(service.getUserAccessLevel()).toBe('Gestor');
+
+    service.saveToken(createTokenWithPayload({
+      'http://schemas.microsoft.com/ws/2008/06/identity/claims/role': 'Leitura'
+    }));
+    expect(service.getUserAccessLevel()).toBe('Leitura');
+  });
+
+  it('should not claim an administrator profile when the jwt has no access level', () => {
+    service.saveToken(createTokenWithPayload({ name: 'Maria Silva' }));
+
+    expect(service.getUserAccessLevel()).toBe('Perfil nao informado');
   });
 
   it('should resolve display name from email when name claim is blank', () => {

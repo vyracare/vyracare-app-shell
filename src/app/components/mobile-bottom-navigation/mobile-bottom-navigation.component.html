@@ -1,0 +1,26 @@
+<nav class="mobile-bottom-nav" aria-label="Navegação principal mobile">
+  @for (item of items; track item.id) {
+    <button
+      type="button"
+      class="mobile-bottom-nav__item"
+      [class.is-active]="activeItemId === item.id"
+      [attr.aria-current]="activeItemId === item.id ? 'page' : null"
+      (click)="itemSelected.emit(item)"
+    >
+      <vc-icon [name]="item.icon ?? 'grid-1x2'" size="md" [decorative]="true"></vc-icon>
+      <span>{{ item.label }}</span>
+    </button>
+  }
+  <button
+    type="button"
+    class="mobile-bottom-nav__item"
+    [class.is-active]="menuActive"
+    aria-controls="shell-navigation"
+    aria-label="Abrir menu completo"
+    aria-expanded="false"
+    (click)="menuRequested.emit()"
+  >
+    <vc-icon name="list" size="md" [decorative]="true"></vc-icon>
+    <span>Menu</span>
+  </button>
+</nav>
