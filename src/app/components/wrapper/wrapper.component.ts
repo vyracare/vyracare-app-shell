@@ -27,6 +27,7 @@ type ShellSidebarBlueprint = {
     path: string;
     label: string;
     icon: string;
+    children?: Array<{ path: string; label: string; icon: string }>;
   }>;
 };
 
@@ -49,7 +50,15 @@ const SHELL_SIDEBAR_BLUEPRINT: ShellSidebarBlueprint[] = [
   {
     label: 'Gestao',
     items: [
-      { path: 'financeiro', label: 'Financeiro', icon: 'cash-coin' }
+      {
+        path: 'financeiro-menu', label: 'Financeiro', icon: 'cash-coin', children: [
+          { path: 'financeiro', label: 'Visao geral', icon: 'grid-1x2' },
+          { path: 'financeiro/recebimentos', label: 'Recebimentos', icon: 'cash-coin' },
+          { path: 'financeiro/pagamentos', label: 'Pagamentos', icon: 'credit-card' },
+          { path: 'financeiro/compras', label: 'Compras', icon: 'bag' },
+          { path: 'financeiro/movimentacoes', label: 'Caixa', icon: 'arrow-left-right' }
+        ]
+      }
     ]
   }
 ];
@@ -128,7 +137,7 @@ export class WrapperComponent {
   /** Active sidebar item derived from the current route tree. */
   protected get activeSidebarItemId(): string {
     const currentPath = this.currentUrl();
-    const items = this.sidebarGroups.flatMap((group) => group.items);
+    const items = this.sidebarGroups.flatMap((group) => group.items.flatMap(item => [item, ...(item.children ?? [])]));
     const activeItem =
       items.find((item) => currentPath === item.id) ??
       items
@@ -222,12 +231,13 @@ export class WrapperComponent {
       .map((group) => ({
         label: group.label,
         items: group.items
-          .filter((item) => routes.some((route) => route.path === item.path || route.path === item.path.split('/')[0]))
-          .filter((item) => item.path !== 'financeiro' || this.authService.hasFinanceReadAccess())
+          .filter((item) => item.path !== 'financeiro-menu' || this.authService.hasFinanceReadAccess())
+          .filter((item) => item.path === 'financeiro-menu' || routes.some((route) => route.path === item.path || route.path === item.path.split('/')[0]))
           .map((item) => ({
             id: item.path,
             label: item.label,
-            icon: item.icon
+            icon: item.icon,
+            children: item.children?.map(child => ({ id: child.path, label: child.label, icon: child.icon }))
           }))
       }))
       .filter((group) => group.items.length > 0);

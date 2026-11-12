@@ -79,12 +79,21 @@ describe('WrapperComponent', () => {
     const fixture = TestBed.createComponent(WrapperComponent);
     fixture.detectChanges();
     const component = fixture.componentInstance;
-    const groups = component['sidebarGroups'] as Array<{ items: Array<{ id: string }> }>;
+    const groups = component['sidebarGroups'] as Array<{
+      items: Array<{ id: string; children?: Array<{ id: string }> }>;
+    }>;
 
     expect(groups.length).toBe(3);
     expect(groups[0].items.map((item) => item.id)).toEqual(['dashboard', 'dashboard/agenda', 'pacientes']);
     expect(groups[1].items.map((item) => item.id)).toEqual(['cadastro/funcionarios', 'cadastro/procedimentos']);
-    expect(groups[2].items.map((item) => item.id)).toEqual(['financeiro']);
+    expect(groups[2].items.map((item) => item.id)).toEqual(['financeiro-menu']);
+    expect(groups[2].items[0].children?.map((item) => item.id)).toEqual([
+      'financeiro',
+      'financeiro/recebimentos',
+      'financeiro/pagamentos',
+      'financeiro/compras',
+      'financeiro/movimentacoes'
+    ]);
   });
 
   it('should expose the primary destinations in the mobile navigation', () => {

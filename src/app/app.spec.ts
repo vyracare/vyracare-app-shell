@@ -28,7 +28,8 @@ describe('App', () => {
             logout: jest.fn(),
             getUserDisplayName: jest.fn().mockReturnValue('Test User'),
             getUserInitials: jest.fn().mockReturnValue('TU'),
-            getUserAccessLevel: jest.fn().mockReturnValue('Administrador')
+            getUserAccessLevel: jest.fn().mockReturnValue('Administrador'),
+            hasFinanceReadAccess: jest.fn().mockReturnValue(true)
           }
         },
         { provide: NotificationCenterService, useValue: { items: signal([]), start: jest.fn() } }
