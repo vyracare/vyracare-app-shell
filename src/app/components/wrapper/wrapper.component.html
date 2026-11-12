@@ -7,7 +7,7 @@
     searchPlaceholder="Busque por páginas, pacientes ou procedimentos"
     [searchValue]="searchValue()"
     [searchSuggestions]="searchSuggestions()"
-    [notifications]="notifications"
+    [notifications]="notifications()"
     [profileName]="userDisplayName"
     [profileRole]="userAccessLevel"
     [profileInitials]="userInitials"
@@ -16,6 +16,8 @@
     (searchSubmitted)="handleSearchSubmit($event)"
     (searchSuggestionSelected)="handleSearchSuggestion($event)"
     (logoClicked)="navigateToRoot()"
+    (notificationSelected)="handleNotification($event)"
+    (viewAllNotifications)="viewAllNotifications()"
     (profileActionSelected)="handleProfileAction($event)"
   ></vc-navbar>
 

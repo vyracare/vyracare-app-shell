@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, DestroyRef, HostListener, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, HostListener, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NavigationEnd, Router, RouterOutlet, type Route } from '@angular/router';
 import { filter } from 'rxjs';
@@ -18,6 +18,8 @@ import {
 import { AuthService } from '../../services/auth/auth.service';
 import { MobileBottomNavigationComponent } from '../mobile-bottom-navigation/mobile-bottom-navigation.component';
 import { NavigationSearchService } from '../../services/navigation-search/navigation-search.service';
+import { NotificationCenterService } from '../../services/notification-center/notification-center.service';
+import type { ShellNotification } from '../../models/shell-notification.model';
 
 type ShellSidebarBlueprint = {
   label: string;
@@ -43,6 +45,12 @@ const SHELL_SIDEBAR_BLUEPRINT: ShellSidebarBlueprint[] = [
       { path: 'cadastro/funcionarios', label: 'Funcionarios', icon: 'person-badge' },
       { path: 'cadastro/procedimentos', label: 'Procedimentos', icon: 'clipboard2-pulse' }
     ]
+  },
+  {
+    label: 'Gestao',
+    items: [
+      { path: 'financeiro', label: 'Financeiro', icon: 'cash-coin' }
+    ]
   }
 ];
 
@@ -62,24 +70,9 @@ const SHELL_SIDEBAR_BLUEPRINT: ShellSidebarBlueprint[] = [
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class WrapperComponent {
+  private readonly notificationCenter = inject(NotificationCenterService);
   /** Notifications displayed in the shell header. */
-  protected readonly notifications: VcNotificationItem[] = [
-    {
-      id: 'agenda',
-      title: 'Agenda de hoje',
-      description: 'Voce possui 8 atendimentos confirmados.'
-    },
-    {
-      id: 'financeiro',
-      title: 'Financeiro',
-      description: '3 boletos aguardando confirmacao.'
-    },
-    {
-      id: 'suporte',
-      title: 'Suporte',
-      description: 'Novo chamado respondido por nossa equipe.'
-    }
-  ];
+  protected readonly notifications = this.notificationCenter.items;
   /** Profile actions rendered in the shell dropdown. */
   protected readonly profileActions: VcNavbarAction[] = [{ id: 'logout', label: 'Sair' }];
   /** Support card shown at the bottom of the sidebar. */
@@ -121,6 +114,7 @@ export class WrapperComponent {
     this.userInitials = this.authService.getUserInitials();
     this.userAccessLevel = this.authService.getUserAccessLevel();
     this.sidebarGroups = this.buildSidebarGroups(this.router.config);
+    this.notificationCenter.start();
     this.syncCurrentUrl();
 
     this.router.events
@@ -204,8 +198,22 @@ export class WrapperComponent {
   /** Executes shell profile actions. */
   handleProfileAction(action: VcNavbarAction): void {
     if (action.id === 'logout') {
+      this.notificationCenter.stop();
       this.authService.logout();
     }
+  }
+
+  /** Marks a real API notification as read before opening its destination. */
+  handleNotification(notification: VcNotificationItem): void {
+    const selected = notification as ShellNotification;
+    this.notificationCenter.markAsRead(selected).subscribe({
+      next: () => void this.router.navigateByUrl(selected.route)
+    });
+  }
+
+  /** Opens the complete list while preserving the current unread collection. */
+  viewAllNotifications(): void {
+    void this.router.navigateByUrl('/notificacoes');
   }
 
   /** Filters the configured routes to only expose screens that exist in the current shell. */
@@ -215,6 +223,7 @@ export class WrapperComponent {
         label: group.label,
         items: group.items
           .filter((item) => routes.some((route) => route.path === item.path || route.path === item.path.split('/')[0]))
+          .filter((item) => item.path !== 'financeiro' || this.authService.hasFinanceReadAccess())
           .map((item) => ({
             id: item.path,
             label: item.label,

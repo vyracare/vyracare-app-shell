@@ -6,6 +6,7 @@ describe('NavigationSearchService', () => {
   let service: NavigationSearchService;
 
   beforeEach(() => {
+    localStorage.clear();
     service = TestBed.inject(NavigationSearchService);
   });
 
@@ -26,5 +27,14 @@ describe('NavigationSearchService', () => {
   it('resolves destinations by their stable identifier', () => {
     expect(service.findById('new-patient')?.path).toBe('/pacientes/cadastro');
     expect(service.findById('unknown')).toBeUndefined();
+  });
+
+  it('only exposes finance destinations to authorized tokens', () => {
+    expect(service.search('financeiro')).toEqual([]);
+    const payload = btoa(JSON.stringify({ job_role: 'Financeiro', access_level: 'Leitura' }));
+    localStorage.setItem('jwtToken', `header.${payload}.signature`);
+    expect(service.search('financeiro')[0]?.id).toBe('finance');
+    localStorage.setItem('jwtToken', 'invalid');
+    expect(service.findById('finance')).toBeUndefined();
   });
 });

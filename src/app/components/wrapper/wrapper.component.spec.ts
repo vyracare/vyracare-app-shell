@@ -1,4 +1,4 @@
-import { provideZonelessChangeDetection } from '@angular/core';
+import { provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { provideRouter, Router, RouterOutlet } from '@angular/router';
@@ -6,6 +6,8 @@ import { provideRouter, Router, RouterOutlet } from '@angular/router';
 import { AuthService } from '../../services/auth/auth.service';
 import { routes } from '../../app.routes';
 import { WrapperComponent } from './wrapper.component';
+import { NotificationCenterService } from '../../services/notification-center/notification-center.service';
+import { of } from 'rxjs';
 
 describe('WrapperComponent', () => {
   let authServiceMock: {
@@ -13,15 +15,23 @@ describe('WrapperComponent', () => {
     getUserDisplayName: jest.Mock;
     getUserInitials: jest.Mock;
     getUserAccessLevel: jest.Mock;
+    hasFinanceReadAccess: jest.Mock;
   };
   let router: Router;
+  const notificationCenterMock = {
+    items: signal([]),
+    start: jest.fn(),
+    stop: jest.fn(),
+    markAsRead: jest.fn(() => of(void 0))
+  };
 
   beforeEach(async () => {
     authServiceMock = {
       logout: jest.fn(),
       getUserDisplayName: jest.fn().mockReturnValue('Test User'),
       getUserInitials: jest.fn().mockReturnValue('TU'),
-      getUserAccessLevel: jest.fn().mockReturnValue('Administrador')
+      getUserAccessLevel: jest.fn().mockReturnValue('Administrador'),
+      hasFinanceReadAccess: jest.fn().mockReturnValue(true)
     };
 
     await TestBed.configureTestingModule({
@@ -29,7 +39,8 @@ describe('WrapperComponent', () => {
       providers: [
         provideZonelessChangeDetection(),
         provideRouter(routes),
-        { provide: AuthService, useValue: authServiceMock }
+        { provide: AuthService, useValue: authServiceMock },
+        { provide: NotificationCenterService, useValue: notificationCenterMock }
       ]
     }).compileComponents();
 
@@ -70,9 +81,10 @@ describe('WrapperComponent', () => {
     const component = fixture.componentInstance;
     const groups = component['sidebarGroups'] as Array<{ items: Array<{ id: string }> }>;
 
-    expect(groups.length).toBe(2);
+    expect(groups.length).toBe(3);
     expect(groups[0].items.map((item) => item.id)).toEqual(['dashboard', 'dashboard/agenda', 'pacientes']);
     expect(groups[1].items.map((item) => item.id)).toEqual(['cadastro/funcionarios', 'cadastro/procedimentos']);
+    expect(groups[2].items.map((item) => item.id)).toEqual(['financeiro']);
   });
 
   it('should expose the primary destinations in the mobile navigation', () => {
@@ -197,5 +209,21 @@ describe('WrapperComponent', () => {
     component.handleProfileAction({ id: 'logout', label: 'Sair' });
 
     expect(authServiceMock.logout).toHaveBeenCalled();
+    expect(notificationCenterMock.stop).toHaveBeenCalled();
+  });
+
+  it('should acknowledge a selected notification and navigate to its route', () => {
+    const fixture = TestBed.createComponent(WrapperComponent);
+    fixture.detectChanges();
+    const navigateSpy = jest.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
+    const notification = {
+      id: 'finance:1', source: 'finance' as const, sourceId: '1', title: 'Boleto',
+      description: 'Pendente', route: '/financeiro/boletos', occurredAt: '2026-11-11T12:00:00Z'
+    };
+
+    fixture.componentInstance.handleNotification(notification);
+
+    expect(notificationCenterMock.markAsRead).toHaveBeenCalledWith(notification);
+    expect(navigateSpy).toHaveBeenCalledWith('/financeiro/boletos');
   });
 });

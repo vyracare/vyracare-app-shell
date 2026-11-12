@@ -240,6 +240,25 @@ describe('AuthService', () => {
     expect(service.getUserAccessLevel()).toBe('Perfil nao informado');
   });
 
+  it('should resolve finance read and manage permissions from tenant and employee claims', () => {
+    service.saveToken(createTokenWithPayload({ tenant_role: 'Owner' }));
+    expect(service.getClaim('tenant_role')).toBe('Owner');
+    expect(service.hasFinanceReadAccess()).toBe(true);
+    expect(service.hasFinanceManageAccess()).toBe(true);
+
+    service.saveToken(createTokenWithPayload({ job_role: 'Financeiro', access_level: 'Leitura' }));
+    expect(service.hasFinanceReadAccess()).toBe(true);
+    expect(service.hasFinanceManageAccess()).toBe(false);
+
+    service.saveToken(createTokenWithPayload({ job_role: 'Financeiro', access_level: 'Operacional' }));
+    expect(service.hasFinanceManageAccess()).toBe(true);
+
+    service.saveToken(createTokenWithPayload({ job_role: 'Clinico', access_level: 'Operacional' }));
+    expect(service.hasFinanceReadAccess()).toBe(false);
+    expect(service.hasFinanceManageAccess()).toBe(false);
+    expect(service.getClaim('missing')).toBe('');
+  });
+
   it('should resolve display name from email when name claim is blank', () => {
     service.saveToken(createTokenWithPayload({ name: '   ', email: 'user@example.com' }));
 
