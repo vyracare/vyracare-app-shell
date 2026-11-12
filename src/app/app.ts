@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, signal } from '@angular/core';
 import { WrapperComponent } from './components/wrapper/wrapper.component';
-import { CommonModule } from '@angular/common';
+
 import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -9,7 +9,7 @@ import { VcToastContainerComponent } from '@vyracare/design-system';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, WrapperComponent, RouterOutlet, VcToastContainerComponent],
+  imports: [WrapperComponent, RouterOutlet, VcToastContainerComponent],
   templateUrl: './app.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })

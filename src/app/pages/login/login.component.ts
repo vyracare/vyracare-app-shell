@@ -1,5 +1,5 @@
-import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
+
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { VcButtonComponent, VcInputComponent, VcToastService } from '@vyracare/design-system';
@@ -9,13 +9,13 @@ import { AuthService } from '../../services/auth/auth.service';
   selector: 'vyracare-login',
   standalone: true,
   imports: [
-    CommonModule,
     ReactiveFormsModule,
     RouterLink,
     VcButtonComponent,
     VcInputComponent
-  ],
+],
   templateUrl: './login.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./login.component.scss']
 })
 /** Coordena a autenticacao e apresenta falhas sem expor respostas internas da API. */

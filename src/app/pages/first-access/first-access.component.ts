@@ -1,5 +1,5 @@
-import { Component, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
+
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { VcButtonComponent, VcInputComponent, VcToastService } from '@vyracare/design-system';
@@ -8,8 +8,9 @@ import { AuthService } from '../../services/auth/auth.service';
 @Component({
   selector: 'vyracare-first-access',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, VcButtonComponent, VcInputComponent],
+  imports: [ReactiveFormsModule, VcButtonComponent, VcInputComponent],
   templateUrl: './first-access.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./first-access.component.scss']
 })
 /** Coordena a validacao do primeiro acesso e a definicao segura da senha. */

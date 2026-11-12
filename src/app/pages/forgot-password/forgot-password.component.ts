@@ -1,5 +1,5 @@
-import { Component, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
+
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { VcButtonComponent, VcToastService } from '@vyracare/design-system';
@@ -8,8 +8,9 @@ import { AuthService } from '../../services/auth/auth.service';
 @Component({
   selector: 'vyracare-forgot-password',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, VcButtonComponent],
+  imports: [ReactiveFormsModule, VcButtonComponent],
   templateUrl: './forgot-password.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./forgot-password.component.scss']
 })
 /** Coordena a redefinicao de senha e os feedbacks globais da operacao. */

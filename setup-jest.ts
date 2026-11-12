@@ -1,4 +1,4 @@
-import { setupZoneTestEnv } from 'jest-preset-angular/setup-env/zone/index.mjs';
+import { setupZonelessTestEnv } from 'jest-preset-angular/setup-env/zoneless';
 
 // Provide basic polyfills that browser APIs expose but Node lacks.
 if (!globalThis.atob) {
@@ -11,4 +11,4 @@ if (!globalThis.btoa) {
     Buffer.from(data, 'binary').toString('base64');
 }
 
-setupZoneTestEnv();
+setupZonelessTestEnv();

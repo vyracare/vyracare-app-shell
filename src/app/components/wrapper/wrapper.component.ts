@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, DestroyRef, HostListener, inject, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { NavigationEnd, Router, RouterOutlet, type Route } from '@angular/router';
 import { filter } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -67,13 +67,12 @@ const SHELL_SIDEBAR_BLUEPRINT: ShellSidebarBlueprint[] = [
   selector: 'vyracare-wrapper',
   standalone: true,
   imports: [
-    CommonModule,
     RouterOutlet,
     VcNavbarComponent,
     VcIconComponent,
     VcSidebarComponent,
     MobileBottomNavigationComponent
-  ],
+],
   templateUrl: './wrapper.component.html',
   styleUrls: ['./wrapper.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush

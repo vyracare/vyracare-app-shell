@@ -1,5 +1,5 @@
-import { discardPeriodicTasks, fakeAsync, TestBed, tick } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { TestBed } from '@angular/core/testing';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 
 import { environment } from '../../../environments/environments';
@@ -10,14 +10,14 @@ describe('NotificationCenterService', () => {
   let http: HttpTestingController;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+    TestBed.configureTestingModule({ providers: [provideHttpClient(withXhr()), provideHttpClientTesting()] });
     service = TestBed.inject(NotificationCenterService);
     http = TestBed.inject(HttpTestingController);
   });
 
   afterEach(() => http.verify());
 
-  it('should aggregate unread appointments and finance notifications', fakeAsync(() => {
+  it('should aggregate unread appointments and finance notifications', () => {
     service.refresh();
 
     http.expectOne(`${environment.appointmentsApiUrl}/notifications/unread`).flush([{
@@ -29,7 +29,7 @@ describe('NotificationCenterService', () => {
       severity: 'warning', route: '/financeiro/boletos'
     }]);
     expect(service.items().map(item => item.id)).toEqual(['finance:invoice-1', 'appointment:appointment-1']);
-  }));
+  });
 
   it('should remove an item after its source confirms it as read', () => {
     const item = {
@@ -73,14 +73,16 @@ describe('NotificationCenterService', () => {
     environment.financeApiUrl = financeUrl;
   });
 
-  it('should start only one polling stream', fakeAsync(() => {
+  it('should start only one polling stream', () => {
+    jest.useFakeTimers();
     service.start();
-    tick();
+    jest.advanceTimersByTime(0);
     http.expectOne(`${environment.appointmentsApiUrl}/notifications/unread`).flush([]);
     http.expectOne(`${environment.financeApiUrl}/notifications/unread`).flush([]);
     service.start();
     http.expectNone(`${environment.appointmentsApiUrl}/notifications/unread`);
     service.stop();
     expect(service.items()).toEqual([]);
-  }));
+    jest.useRealTimers();
+  });
 });

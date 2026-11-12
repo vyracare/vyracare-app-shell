@@ -1,6 +1,6 @@
-import { CommonModule } from '@angular/common';
+
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { finalize } from 'rxjs';
@@ -10,8 +10,9 @@ import { AuthService } from '../../services/auth/auth.service';
 @Component({
   selector: 'vyracare-company-onboarding',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, VcButtonComponent, VcInputComponent],
+  imports: [ReactiveFormsModule, VcButtonComponent, VcInputComponent],
   templateUrl: './company-onboarding.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./company-onboarding.component.scss']
 })
 export class CompanyOnboardingComponent {

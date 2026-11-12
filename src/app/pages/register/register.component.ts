@@ -1,5 +1,5 @@
-import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
+
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
@@ -11,12 +11,12 @@ import { AuthService } from '../../services/auth/auth.service';
   selector: 'vyracare-register',
   standalone: true,
   imports: [
-    CommonModule,
     ReactiveFormsModule,
     VcButtonComponent,
     VcInputComponent
-  ],
+],
   templateUrl: './register.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./register.component.scss']
 })
 /** Coordena o cadastro publico e seus retornos seguros de sucesso ou falha. */
