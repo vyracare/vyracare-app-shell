@@ -1,9 +1,10 @@
-import { provideZonelessChangeDetection } from '@angular/core';
+import { provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { NavigationEnd, Router } from '@angular/router';
 import { Subject } from 'rxjs';
 import { AuthService } from './services/auth/auth.service';
 import { App } from './app';
+import { NotificationCenterService } from './services/notification-center/notification-center.service';
 
 describe('App', () => {
   let routerEvents$: Subject<NavigationEnd>;
@@ -27,9 +28,11 @@ describe('App', () => {
             logout: jest.fn(),
             getUserDisplayName: jest.fn().mockReturnValue('Test User'),
             getUserInitials: jest.fn().mockReturnValue('TU'),
-            getUserAccessLevel: jest.fn().mockReturnValue('Administrador')
+            getUserAccessLevel: jest.fn().mockReturnValue('Administrador'),
+            hasFinanceReadAccess: jest.fn().mockReturnValue(true)
           }
-        }
+        },
+        { provide: NotificationCenterService, useValue: { items: signal([]), start: jest.fn() } }
       ]
     }).compileComponents();
   });

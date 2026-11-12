@@ -43,7 +43,6 @@ module.exports = {
       statements: 90
     }
   },
-  resolver: 'jest-preset-angular/build/resolvers/ng-jest-resolver.js',
   testEnvironmentOptions: {
     customExportConditions: ['browser', 'module', 'default', 'node', 'jest']
   }

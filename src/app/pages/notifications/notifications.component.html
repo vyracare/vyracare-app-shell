@@ -1,0 +1,29 @@
+<main class="notifications-page">
+  <header>
+    <span>Central de notificacoes</span>
+    <vc-heading [level]="1">Notificacoes recentes</vc-heading>
+    <vc-text [muted]="true">Aqui aparecem somente os avisos que ainda precisam da sua atencao.</vc-text>
+  </header>
+
+  @if (notifications().length === 0) {
+    <section class="notifications-empty">
+      <vc-heading [level]="2">Tudo em dia</vc-heading>
+      <vc-text [muted]="true">Nao existem notificacoes nao lidas no momento.</vc-text>
+    </section>
+  } @else {
+    <ul>
+      @for (notification of notifications(); track notification.id) {
+        <li>
+          <div>
+            <strong>{{ notification.title }}</strong>
+            <p>{{ notification.description }}</p>
+            <small>{{ notification.occurredAt | date:'dd/MM/yyyy HH:mm' }}</small>
+          </div>
+          <vc-button type="button" size="sm" variant="secondary" (click)="open(notification)">
+            Ver detalhe
+          </vc-button>
+        </li>
+      }
+    </ul>
+  }
+</main>

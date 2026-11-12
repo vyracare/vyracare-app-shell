@@ -1,9 +1,8 @@
-<ng-container *ngIf="showShell(); else authRoutes">
+@if (showShell()) {
   <vyracare-wrapper></vyracare-wrapper>
-</ng-container>
-
-<ng-template #authRoutes>
+} @else {
   <router-outlet></router-outlet>
-</ng-template>
+}
+
 
 <vc-toast-container />

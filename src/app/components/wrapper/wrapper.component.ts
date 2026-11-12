@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, DestroyRef, HostListener, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, HostListener, inject, signal } from '@angular/core';
+
 import { NavigationEnd, Router, RouterOutlet, type Route } from '@angular/router';
 import { filter } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -18,6 +18,8 @@ import {
 import { AuthService } from '../../services/auth/auth.service';
 import { MobileBottomNavigationComponent } from '../mobile-bottom-navigation/mobile-bottom-navigation.component';
 import { NavigationSearchService } from '../../services/navigation-search/navigation-search.service';
+import { NotificationCenterService } from '../../services/notification-center/notification-center.service';
+import type { ShellNotification } from '../../models/shell-notification.model';
 
 type ShellSidebarBlueprint = {
   label: string;
@@ -25,6 +27,7 @@ type ShellSidebarBlueprint = {
     path: string;
     label: string;
     icon: string;
+    children?: Array<{ path: string; label: string; icon: string }>;
   }>;
 };
 
@@ -43,6 +46,20 @@ const SHELL_SIDEBAR_BLUEPRINT: ShellSidebarBlueprint[] = [
       { path: 'cadastro/funcionarios', label: 'Funcionarios', icon: 'person-badge' },
       { path: 'cadastro/procedimentos', label: 'Procedimentos', icon: 'clipboard2-pulse' }
     ]
+  },
+  {
+    label: 'Gestao',
+    items: [
+      {
+        path: 'financeiro-menu', label: 'Financeiro', icon: 'cash-coin', children: [
+          { path: 'financeiro', label: 'Visao geral', icon: 'grid-1x2' },
+          { path: 'financeiro/recebimentos', label: 'Recebimentos', icon: 'cash-coin' },
+          { path: 'financeiro/pagamentos', label: 'Pagamentos', icon: 'credit-card' },
+          { path: 'financeiro/compras', label: 'Compras', icon: 'bag' },
+          { path: 'financeiro/movimentacoes', label: 'Caixa', icon: 'arrow-left-right' }
+        ]
+      }
+    ]
   }
 ];
 
@@ -50,36 +67,20 @@ const SHELL_SIDEBAR_BLUEPRINT: ShellSidebarBlueprint[] = [
   selector: 'vyracare-wrapper',
   standalone: true,
   imports: [
-    CommonModule,
     RouterOutlet,
     VcNavbarComponent,
     VcIconComponent,
     VcSidebarComponent,
     MobileBottomNavigationComponent
-  ],
+],
   templateUrl: './wrapper.component.html',
   styleUrls: ['./wrapper.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class WrapperComponent {
+  private readonly notificationCenter = inject(NotificationCenterService);
   /** Notifications displayed in the shell header. */
-  protected readonly notifications: VcNotificationItem[] = [
-    {
-      id: 'agenda',
-      title: 'Agenda de hoje',
-      description: 'Voce possui 8 atendimentos confirmados.'
-    },
-    {
-      id: 'financeiro',
-      title: 'Financeiro',
-      description: '3 boletos aguardando confirmacao.'
-    },
-    {
-      id: 'suporte',
-      title: 'Suporte',
-      description: 'Novo chamado respondido por nossa equipe.'
-    }
-  ];
+  protected readonly notifications = this.notificationCenter.items;
   /** Profile actions rendered in the shell dropdown. */
   protected readonly profileActions: VcNavbarAction[] = [{ id: 'logout', label: 'Sair' }];
   /** Support card shown at the bottom of the sidebar. */
@@ -121,6 +122,7 @@ export class WrapperComponent {
     this.userInitials = this.authService.getUserInitials();
     this.userAccessLevel = this.authService.getUserAccessLevel();
     this.sidebarGroups = this.buildSidebarGroups(this.router.config);
+    this.notificationCenter.start();
     this.syncCurrentUrl();
 
     this.router.events
@@ -134,7 +136,7 @@ export class WrapperComponent {
   /** Active sidebar item derived from the current route tree. */
   protected get activeSidebarItemId(): string {
     const currentPath = this.currentUrl();
-    const items = this.sidebarGroups.flatMap((group) => group.items);
+    const items = this.sidebarGroups.flatMap((group) => group.items.flatMap(item => [item, ...(item.children ?? [])]));
     const activeItem =
       items.find((item) => currentPath === item.id) ??
       items
@@ -204,8 +206,22 @@ export class WrapperComponent {
   /** Executes shell profile actions. */
   handleProfileAction(action: VcNavbarAction): void {
     if (action.id === 'logout') {
+      this.notificationCenter.stop();
       this.authService.logout();
     }
+  }
+
+  /** Marks a real API notification as read before opening its destination. */
+  handleNotification(notification: VcNotificationItem): void {
+    const selected = notification as ShellNotification;
+    this.notificationCenter.markAsRead(selected).subscribe({
+      next: () => void this.router.navigateByUrl(selected.route)
+    });
+  }
+
+  /** Opens the complete list while preserving the current unread collection. */
+  viewAllNotifications(): void {
+    void this.router.navigateByUrl('/notificacoes');
   }
 
   /** Filters the configured routes to only expose screens that exist in the current shell. */
@@ -214,11 +230,13 @@ export class WrapperComponent {
       .map((group) => ({
         label: group.label,
         items: group.items
-          .filter((item) => routes.some((route) => route.path === item.path || route.path === item.path.split('/')[0]))
+          .filter((item) => item.path !== 'financeiro-menu' || this.authService.hasFinanceReadAccess())
+          .filter((item) => item.path === 'financeiro-menu' || routes.some((route) => route.path === item.path || route.path === item.path.split('/')[0]))
           .map((item) => ({
             id: item.path,
             label: item.label,
-            icon: item.icon
+            icon: item.icon,
+            children: item.children?.map(child => ({ id: child.path, label: child.label, icon: child.icon }))
           }))
       }))
       .filter((group) => group.items.length > 0);

@@ -1,0 +1,11 @@
+:host { display: block; }
+.notifications-page { display: grid; gap: 1.25rem; color: var(--vc-color-text, #20243a); }
+header { padding: 1.5rem; border: 1px solid #e4d9ff; border-radius: 1.25rem; background: linear-gradient(135deg, #f3efff, #fae8f2); }
+header > span { display: inline-flex; margin-bottom: .5rem; padding: .35rem .75rem; border-radius: 999px; background: #fff; color: #5631ef; font-size: .75rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+ul { display: grid; gap: .75rem; margin: 0; padding: 0; list-style: none; }
+li, .notifications-empty { padding: 1.25rem; border: 1px solid #ece8f7; border-radius: 1rem; background: #fff; box-shadow: 0 .75rem 2rem rgba(64, 45, 112, .06); }
+li { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+li p { margin: .35rem 0; color: #737897; }
+li small { color: #737897; }
+.notifications-empty { text-align: center; }
+@media (max-width: 720px) { header, li, .notifications-empty { padding: 1rem; } li { align-items: stretch; flex-direction: column; } }

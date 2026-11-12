@@ -74,6 +74,22 @@ const NAVIGATION_DESTINATIONS: readonly NavigationSearchDestination[] = [
     icon: 'clipboard2-plus',
     path: '/cadastro/procedimentos/novo',
     keywords: ['cadastro procedimento', 'adicionar servico']
+  },
+  {
+    id: 'finance',
+    label: 'Financeiro',
+    description: 'Consultar receitas, despesas e boletos',
+    icon: 'cash-coin',
+    path: '/financeiro',
+    keywords: ['financeiro', 'receita', 'despesa', 'boleto', 'fluxo de caixa']
+  },
+  {
+    id: 'notifications',
+    label: 'Notificacoes',
+    description: 'Consultar avisos ainda nao lidos',
+    icon: 'bell',
+    path: '/notificacoes',
+    keywords: ['notificacao', 'aviso', 'lembrete']
   }
 ];
 
@@ -86,7 +102,7 @@ export class NavigationSearchService {
       return [];
     }
 
-    const results = NAVIGATION_DESTINATIONS.filter((destination) => {
+    const results = this.allowedDestinations().filter((destination) => {
       const searchableContent = [destination.label, destination.description, ...destination.keywords]
         .map((value) => this.normalize(value))
         .join(' ');
@@ -99,7 +115,24 @@ export class NavigationSearchService {
 
   /** Resolves the complete destination selected from the design-system suggestion. */
   findById(id: string): NavigationSearchDestination | undefined {
-    return NAVIGATION_DESTINATIONS.find((destination) => destination.id === id);
+    return this.allowedDestinations().find((destination) => destination.id === id);
+  }
+
+  private allowedDestinations(): readonly NavigationSearchDestination[] {
+    return NAVIGATION_DESTINATIONS.filter((destination) => destination.id !== 'finance' || this.hasFinanceReadAccess());
+  }
+
+  private hasFinanceReadAccess(): boolean {
+    try {
+      const part = (localStorage.getItem('jwtToken') ?? '').split('.')[1];
+      if (!part) return false;
+      const normalized = part.replace(/-/g, '+').replace(/_/g, '/');
+      const payload = JSON.parse(atob(normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '='))) as Record<string, unknown>;
+      const oneOf = (claim: string, ...values: string[]) => values.some(value => value.toLocaleLowerCase('pt-BR') === String(payload[claim] ?? '').trim().toLocaleLowerCase('pt-BR'));
+      return oneOf('tenant_role', 'Owner', 'Administrator', 'Proprietario', 'Administrador')
+        || oneOf('access_level', 'Administrador', 'Gestor')
+        || oneOf('job_role', 'Financeiro');
+    } catch { return false; }
   }
 
   private normalize(value: string): string {

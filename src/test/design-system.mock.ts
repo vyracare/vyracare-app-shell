@@ -1,9 +1,10 @@
-import { Component, EventEmitter, forwardRef, Injectable, Input, Output } from '@angular/core';
+import { Component, EventEmitter, forwardRef, Injectable, Input, Output, ChangeDetectionStrategy } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 
 @Component({
   selector: 'vc-button',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <button [type]="type" [disabled]="disabled || loading" (click)="clicked.emit($event)">
       <ng-content></ng-content>
@@ -37,6 +38,7 @@ export class VcButtonComponent {
       <small>{{ error }}</small>
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   providers: [
     {
       provide: NG_VALUE_ACCESSOR,
@@ -82,6 +84,7 @@ export class VcInputComponent implements ControlValueAccessor {
 @Component({
   selector: 'vc-heading',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: '<h1><ng-content></ng-content></h1>'
 })
 export class VcHeadingComponent {
@@ -91,6 +94,7 @@ export class VcHeadingComponent {
 @Component({
   selector: 'vc-text',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: '<p><ng-content></ng-content></p>'
 })
 export class VcTextComponent {
@@ -101,6 +105,7 @@ export class VcTextComponent {
 @Component({
   selector: 'vc-icon',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: '<span [attr.aria-label]="ariaLabel || null"></span>'
 })
 export class VcIconComponent {
@@ -113,6 +118,7 @@ export class VcIconComponent {
 @Component({
   selector: 'vc-navbar',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: ''
 })
 export class VcNavbarComponent {
@@ -138,6 +144,7 @@ export class VcNavbarComponent {
 @Component({
   selector: 'vc-sidebar',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: ''
 })
 export class VcSidebarComponent {
@@ -150,6 +157,7 @@ export class VcSidebarComponent {
 @Component({
   selector: 'vc-toast-container',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: '<div data-testid="toast-container"></div>'
 })
 export class VcToastContainerComponent {}

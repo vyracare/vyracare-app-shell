@@ -118,6 +118,32 @@ export class AuthService {
     return 'Perfil nao informado';
   }
 
+  /** Returns a normalized custom claim from the current access token. */
+  getClaim(name: string): string {
+    const value = this.getJwtPayload()?.[name];
+    return typeof value === 'string' ? value.trim() : '';
+  }
+
+  /** Financial read access shared by navigation and route guards. */
+  hasFinanceReadAccess(): boolean {
+    const tenantRole = this.getClaim('tenant_role');
+    const accessLevel = this.getClaim('access_level');
+    const jobRole = this.getClaim('job_role');
+    return this.isOneOf(tenantRole, 'Owner', 'Administrator', 'Proprietario', 'Administrador')
+      || this.isOneOf(accessLevel, 'Administrador', 'Gestor')
+      || this.isOneOf(jobRole, 'Financeiro');
+  }
+
+  /** Financial mutation access; a Financeiro/Leitura user remains read-only. */
+  hasFinanceManageAccess(): boolean {
+    const tenantRole = this.getClaim('tenant_role');
+    const accessLevel = this.getClaim('access_level');
+    const jobRole = this.getClaim('job_role');
+    return this.isOneOf(tenantRole, 'Owner', 'Administrator', 'Proprietario', 'Administrador')
+      || this.isOneOf(accessLevel, 'Administrador')
+      || (this.isOneOf(jobRole, 'Financeiro') && this.isOneOf(accessLevel, 'Gestor', 'Operacional'));
+  }
+
   isAuthenticated(): boolean {
     const token = this.getToken();
     if (!token) return false;
@@ -154,5 +180,9 @@ export class AuthService {
     }
 
     return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+  }
+
+  private isOneOf(value: string, ...candidates: string[]): boolean {
+    return candidates.some((candidate) => candidate.localeCompare(value, undefined, { sensitivity: 'accent' }) === 0);
   }
 }

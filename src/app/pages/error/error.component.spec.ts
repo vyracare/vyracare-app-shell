@@ -1,24 +1,20 @@
 import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { ErrorComponent } from './error.component';
+import { ErrorComponent, PAGE_RELOAD } from './error.component';
 
 describe('ErrorComponent', () => {
-  let originalLocation: Location;
+  const reloadMock = jest.fn();
 
   beforeEach(async () => {
-    originalLocation = window.location;
+    reloadMock.mockReset();
 
     await TestBed.configureTestingModule({
       imports: [ErrorComponent],
-      providers: [provideZonelessChangeDetection()]
+      providers: [
+        provideZonelessChangeDetection(),
+        { provide: PAGE_RELOAD, useValue: reloadMock }
+      ]
     }).compileComponents();
-  });
-
-  afterEach(() => {
-    Object.defineProperty(window, 'location', {
-      configurable: true,
-      value: originalLocation
-    });
   });
 
   it('should render default title and description', () => {
@@ -45,13 +41,6 @@ describe('ErrorComponent', () => {
   });
 
   it('should reload the page when the action button is clicked', () => {
-    const reloadMock = jest.fn();
-
-    Object.defineProperty(window, 'location', {
-      configurable: true,
-      value: { ...originalLocation, reload: reloadMock }
-    });
-
     const fixture = TestBed.createComponent(ErrorComponent);
     fixture.componentInstance.reload();
 
